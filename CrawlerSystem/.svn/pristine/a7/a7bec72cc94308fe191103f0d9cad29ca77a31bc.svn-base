@@ -1,0 +1,1022 @@
+package com.syntun.controller;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.syntun.controller.systemlog.StartCallable;
+import com.syntun.controller.systemlog.StateCallable;
+import com.syntun.controller.systemlog.StopCallable;
+import com.syntun.controller.systemlog.SysLogger;
+import com.syntun.datasource.DataSourceContextHolder;
+import com.syntun.entity.HistoryLog;
+import com.syntun.entity.Jiexisudu;
+import com.syntun.entity.Server;
+import com.syntun.entity.Servers;
+import com.syntun.service.HistoryLogService;
+import com.syntun.service.JiexisuduService;
+import com.syntun.service.ServerService;
+import com.syntun.service.ServersService;
+import com.syntun.util.GenericController;
+import com.syntun.util.RemoteShellExecutor;
+import com.syntun.util.RemoteTxt;
+import com.syntun.util.Shell;
+import com.syntun.util.getJd_TMExcel;
+
+import net.sf.json.JSONArray;
+
+
+/**
+ * 服务管理
+ */
+@Controller
+@RequestMapping(value = "/command")
+public class CommandController {
+	
+    @Resource(name = "serverService")
+    ServerService serverService;
+    
+    @Resource(name = "serversService")
+    ServersService serversService;
+    
+    @Resource(name = "jiexisuduService")
+    JiexisuduService jiexisuduService;
+    
+    @Resource(name = "historyLogService")
+    HistoryLogService historyLogService;
+	
+    /**
+     *查询单个服务状态
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/queryOneState", produces = "application/json;charset=UTF-8")
+    public Map queryOneState(String id) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        long startTime = System.currentTimeMillis();
+        if(StringUtils.isNotBlank(id)){
+    		try {
+    			DataSourceContextHolder.setDbType("ds_mop");
+    			Server s = serverService.findone(Integer.parseInt(id));
+    			Servers s1 = serversService.findone(s.getIp());
+        		String res = Shell.exec(s.getIp(),s1.getName(),s1.getPassword(), 22,s.getStatepath());
+			    //脚本执行成功
+		    	if(res.equals("0")){
+		    		s.setState("0");
+		    	}
+		    	result.put("stateList", s);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("单个服务耗时:"+ (endTime-startTime)+"ms");
+        return result;
+    }
+    /**
+     *单个服务启动
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "单台服务启动", methodType = "oneStart")
+    @ResponseBody
+    @RequestMapping(value = "/start", produces = "application/json;charset=UTF-8")
+    public Map start(String id) {
+
+        Map<String,String> result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        long startTime = System.currentTimeMillis();
+        if(StringUtils.isNotBlank(id)){
+    		try {
+    			DataSourceContextHolder.setDbType("ds_mop");
+    			Server s = serverService.findone(Integer.parseInt(id));
+    			Servers s1 = serversService.findone(s.getIp());
+				RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s1.getName(),s1.getPassword());
+				// 执行*.sh  后面2个参数
+				Map map = executor.exec(s.getStartpath(),1);
+			    String exec = map.get("ret").toString();
+			    String outStr = map.get("outStr").toString();
+			    if(exec.equals("0")){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+			    }
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("单个服务耗时:"+ (endTime-startTime)+"ms");
+        return result;
+    }
+    /**
+     *单个服务停止
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "单台服务停止", methodType = "oneStop")
+    @ResponseBody
+    @RequestMapping(value = "/stop", produces = "application/json;charset=UTF-8")
+    public Map stop(String id) {
+
+        Map<String,String> result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        if(StringUtils.isNotBlank(id)){
+    		try {
+    			DataSourceContextHolder.setDbType("ds_mop");
+    			Server s = serverService.findone(Integer.parseInt(id));
+    			Servers s1 = serversService.findone(s.getIp());
+				RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s1.getName(),s1.getPassword());
+				// 执行*.sh  后面2个参数
+				Map map = executor.exec(s.getStoppath(),1);
+			    String exec = map.get("ret").toString();
+			    String outStr = map.get("outStr").toString();
+			    if(exec.equals("0")){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+			    }
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+        }
+        return result;
+    }
+    /**
+     *一键启动
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "一键启动服务", methodType = "allStart")
+    @ResponseBody
+    @RequestMapping(value = "/allStart", produces = "application/json;charset=UTF-8")
+    public Map allStart(String serverInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        long startTime = System.currentTimeMillis();
+        List<Server> stateList = new ArrayList<>();
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(serverInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				//启动所有服务
+				DataSourceContextHolder.setDbType("ds_mop");
+				List<Servers> s1 = serversService.findAll();
+				for(Server s:list){
+					String ip = s.getIp();
+					for(Servers sr:s1){
+						if(ip.equals(sr.getIp())){
+							s.setName(sr.getName());
+							s.setPassword(sr.getPassword());
+							break;
+						}
+					}
+				}
+				List<Server> startList = startList(list);
+				if(startList.size()>0){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+				}
+/*				for(Server s:list){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStartpath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    if(exec.equals("0")){
+				        result.put("code", "200");
+				        result.put("msg", "成功!");
+				    }
+				}*/
+				result.put("stateList", stateList);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        long endTime = System.currentTimeMillis();
+        System.out.println("一键启动耗时:"+ (endTime-startTime)+"ms");
+        return result;
+    }
+    /**
+     *一键停止
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "一键停止服务", methodType = "allStop")
+    @ResponseBody
+    @RequestMapping(value = "/allStop", produces = "application/json;charset=UTF-8")
+    public Map allStop(String serverInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			long startTime = System.currentTimeMillis();
+			JSONArray jsonArray = JSONArray.fromObject(serverInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				//停止所有服务
+				DataSourceContextHolder.setDbType("ds_mop");
+				List<Servers> s1 = serversService.findAll();
+				for(Server s:list){
+					String ip = s.getIp();
+					for(Servers sr:s1){
+						if(ip.equals(sr.getIp())){
+							s.setName(sr.getName());
+							s.setPassword(sr.getPassword());
+							break;
+						}
+					}
+				}
+				List<Server> stopList = stopList(list);
+				if(stopList.size()>0){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+				}
+/*				for(Server s:list){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStoppath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    if(exec.equals("0")){
+				        result.put("code", "200");
+				        result.put("msg", "成功!");
+				    }
+				}*/
+			}
+	        long endTime = System.currentTimeMillis();
+	        System.out.println("一键停止耗时:"+ (endTime-startTime)+"ms");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *查询一键启动/停止，服务状态
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/queryallState", produces = "application/json;charset=UTF-8")
+    public Map queryallState(String serverInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			long startTime = System.currentTimeMillis();
+			JSONArray jsonArray = JSONArray.fromObject(serverInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				//启动所有服务完成查看服务状态
+				DataSourceContextHolder.setDbType("ds_mop");
+				List<Servers> s1 = serversService.findAll();
+				for(Server s:list){
+					String ip = s.getIp();
+					for(Servers sr:s1){
+						if(ip.equals(sr.getIp())){
+							s.setName(sr.getName());
+							s.setPassword(sr.getPassword());
+							break;
+						}
+					}
+				}
+				List<Server> stateList = stateList(list);
+				result.put("stateList", stateList);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+	        long endTime = System.currentTimeMillis();
+	        System.out.println("查询一键启动/停止，服务状态耗时:"+ (endTime-startTime)+"ms");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *查询所有服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getAll", produces = "application/json;charset=UTF-8")
+    public Map getAll(String message) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+	      	if(!"0".equals(message)){
+	      		result.put("classify", message);
+	      	}
+	      	DataSourceContextHolder.setDbType("ds_mop");
+			List<Server> serverInfo = serverService.findAll(result);
+			long startTime = System.currentTimeMillis();
+			List<Servers> s1 = serversService.findAll();
+			if(serverInfo.size()>0){
+				for(Server s:serverInfo){
+					String ip = s.getIp();
+					for(Servers sr:s1){
+						if(ip.equals(sr.getIp())){
+							s.setName(sr.getName());
+							s.setPassword(sr.getPassword());
+							break;
+						}
+					}
+				}
+				//serverInfo = stateList(serverInfo);
+/*				for(Server s:serverInfo){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStatepath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    //脚本执行成功
+				    if(exec.equals("0")){
+				    	//停止状态
+				    	if(outStr.equals("0")){
+				    		s.setState("0");
+				    	}
+				    }
+				}*/
+			}
+	        long endTime = System.currentTimeMillis();
+	        System.out.println("耗时================:"+ (endTime-startTime)+"ms");
+	        result.put("code", "200");
+	        result.put("msg", "成功!");
+	        result.put("serverInfo", serverInfo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *查询所有删除的服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getAllDel", produces = "application/json;charset=UTF-8")
+    public Map getAllDel() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			DataSourceContextHolder.setDbType("ds_mop");
+			List<Server> serverInfo = serverService.findAllDel(result);
+//			if(serverInfo.size()>0){
+//				//查询服务状态
+//				serverInfo = stateList(serverInfo);
+//			}
+	        result.put("code", "200");
+	        result.put("msg", "成功!");
+	        result.put("serverInfo", serverInfo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *添加服务器
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "添加单台服务", methodType = "addOneServer")
+    @ResponseBody
+    @RequestMapping(value = "/addServer", produces = "application/json;charset=UTF-8")
+    public Map addServer(String ip,String startpath,String stoppath,String statepath,String classify,String logpath) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			Server s = new Server();
+			s.setIp(ip);
+/*			s.setName(name);
+			s.setPassword(password);*/
+			s.setStartpath(startpath);
+			s.setStoppath(stoppath);
+			s.setStatepath(statepath);
+			s.setClassify(classify);
+			s.setLogpath(logpath);
+			DataSourceContextHolder.setDbType("ds_mop");
+			int i = serverService.insert(s);
+			if(i>0){
+				Servers s1 = serversService.findone(ip);
+				RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s1.getName(),s1.getPassword());
+				// 执行*.sh  后面2个参数
+				Map map = executor.exec(s.getStatepath(),1);
+			    String exec = map.get("ret").toString();
+			    String outStr = map.get("outStr").toString();
+			    //脚本执行成功
+			    if(exec.equals("0")){
+			    	//停止状态
+			    	if(outStr.equals("0")){
+			    		s.setState("0");
+			    	}
+			    }
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+		        result.put("serverInfo", s);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *编辑服务器
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "编辑单台服务", methodType = "editServer")
+    @ResponseBody
+    @RequestMapping(value = "/editServer", produces = "application/json;charset=UTF-8")
+    public Map editServer(String id,String ip,String classify) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			Server s = new Server();
+			s.setId(id);
+			s.setIp(ip);
+			s.setClassify(classify);//平台分类
+			DataSourceContextHolder.setDbType("ds_mop");
+			int i = serverService.update(s);
+			if(i>0){
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *删除服务器
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "删除服务", methodType = "delServer")
+    @ResponseBody
+    @RequestMapping(value = "/delServer", produces = "application/json;charset=UTF-8")
+    public Map delServer(String delServerInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(delServerInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				for(Server s:list){
+					Server s1 = new Server();
+					s1.setId(s.getId());
+					s1.setIsdel("1");
+					DataSourceContextHolder.setDbType("ds_mop");
+					serverService.update(s1);
+				}
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *单台恢复服务器
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "恢复服务", methodType = "recoveryServer")
+    @ResponseBody
+    @RequestMapping(value = "/onerecoveryServer", produces = "application/json;charset=UTF-8")
+    public Map onerecoveryServer(String id) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+				Server s1 = new Server();
+				s1.setId(id);
+				s1.setIsdel("0");
+				DataSourceContextHolder.setDbType("ds_mop");
+				int i = serverService.update(s1);
+				if(i>0){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+				}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *恢复服务器
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "恢复服务", methodType = "recoveryServer")
+    @ResponseBody
+    @RequestMapping(value = "/recoveryServer", produces = "application/json;charset=UTF-8")
+    public Map recoveryServer(String delServerInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(delServerInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			DataSourceContextHolder.setDbType("ds_mop");
+			if(list.size()>0){
+				for(Server s:list){
+					Server s1 = new Server();
+					s1.setId(s.getId());
+					s1.setIsdel("0");
+					serverService.update(s1);
+				}
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    
+    /**
+     * 查询线程状态方法
+     * @param list
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
+    private static List<Server> stateList(List list) throws InterruptedException, ExecutionException {
+        //创建可变长度的线程池
+        ExecutorService taskExecutor = Executors.newCachedThreadPool();
+
+        /**接收集合各段的 执行的返回结果**/
+        List<Future<List<Server>>> futureList = new ArrayList<Future<List<Server>>>();
+
+        /**集合总条数**/
+        int size = list.size();
+        /**5个一个线程**/
+        int threadSize = getThreadSize(size);
+        /**将集合切分的段数**/
+        int sunSum = size/threadSize + 1;
+        int listStart,listEnd;
+        /***当总条数不足10条时 用总条数 当做线程切分值**/
+        if(sunSum > size){
+            sunSum = size;
+        }
+        boolean special = size % threadSize == 0;
+        /**定义子线程**/
+        StateCallable sunCallable;
+        long startTime = System.currentTimeMillis();
+        /**将list 切分10份 多线程执行**/
+        for (int i = 0; i < sunSum; i++) {
+            /***计算切割  开始和结束**/
+            listStart = threadSize * i ;
+            listEnd = threadSize * ( i + 1 );
+            /**最后一段线程会 出现与其他线程不等的情况**/
+            if(i == sunSum - 1){
+                if (special) {
+                    break;
+                }
+                listEnd = size;
+            }
+            /**线程切断**/
+            List<Server> sunList = list.subList(listStart,listEnd);
+            /**子线程初始化**/
+            sunCallable = new StateCallable(i,sunList,size);
+            /***多线程执行***/
+            futureList.add(taskExecutor.submit(sunCallable));
+        }
+        /**对各个线程段结果进行解析**/
+        List<Server> s = new ArrayList<>();
+        for(Future<List<Server>> future : futureList){
+        	s.addAll(future.get());
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("耗时:"+ (endTime-startTime)+"ms");
+        return s;
+    }
+    /**
+     * 启动所有服务线程方法
+     * @param list
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
+    private static List<Server> startList(List list) throws InterruptedException, ExecutionException {
+        //创建可变长度的线程池
+        ExecutorService taskExecutor = Executors.newCachedThreadPool();
+
+        /**接收集合各段的 执行的返回结果**/
+        List<Future<List<Server>>> futureList = new ArrayList<Future<List<Server>>>();
+
+        /**集合总条数**/
+        int size = list.size();
+        /**5个一个线程**/
+        int threadSize = getThreadSize(size);
+        /**将集合切分的段数**/
+        int sunSum = size/threadSize + 1;
+        int listStart,listEnd;
+        /***当总条数不足10条时 用总条数 当做线程切分值**/
+        if(sunSum > size){
+            sunSum = size;
+        }
+        boolean special = size % threadSize == 0;
+        /**定义子线程**/
+        StartCallable sunCallable;
+        long startTime = System.currentTimeMillis();
+        /**将list 切分10份 多线程执行**/
+        for (int i = 0; i < sunSum; i++) {
+            /***计算切割  开始和结束**/
+            /***计算切割  开始和结束**/
+            listStart = threadSize * i ;
+            listEnd = threadSize * ( i + 1 );
+            /**最后一段线程会 出现与其他线程不等的情况**/
+            if(i == sunSum - 1){
+                if (special) {
+                    break;
+                }
+                listEnd = size;
+            }
+            /**线程切断**/
+            List<Server> sunList = list.subList(listStart,listEnd);
+            /**子线程初始化**/
+            sunCallable = new StartCallable(i,sunList);
+            /***多线程执行***/
+            futureList.add(taskExecutor.submit(sunCallable));
+        }
+        /**对各个线程段结果进行解析**/
+        List<Server> s = new ArrayList<>();
+        for(Future<List<Server>> future : futureList){
+        	s.addAll(future.get());
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("耗时:"+ (endTime-startTime)+"ms");
+        return s;
+    }
+    /**
+     * 停止所有线程服务方法
+     * @param list
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
+    private static List<Server> stopList(List list) throws InterruptedException, ExecutionException {
+        //创建可变长度的线程池
+        ExecutorService taskExecutor = Executors.newCachedThreadPool();
+
+        /**接收集合各段的 执行的返回结果**/
+        List<Future<List<Server>>> futureList = new ArrayList<Future<List<Server>>>();
+
+        /**集合总条数**/
+        int size = list.size();
+        /**5个一个线程**/
+        int threadSize = getThreadSize(size);
+        /**将集合切分的段数**/
+        int sunSum = size/threadSize + 1;
+        int listStart,listEnd;
+        /***当总条数不足10条时 用总条数 当做线程切分值**/
+        if(sunSum > size){
+            sunSum = size;
+        }
+        boolean special = size % threadSize == 0;
+        /**定义子线程**/
+        StopCallable sunCallable;
+        long startTime = System.currentTimeMillis();
+        /**将list 切分10份 多线程执行**/
+        for (int i = 0; i < sunSum; i++) {
+            /***计算切割  开始和结束**/
+            listStart = threadSize * i ;
+            listEnd = threadSize * ( i + 1 );
+            /**最后一段线程会 出现与其他线程不等的情况**/
+            if(i == sunSum - 1){
+                if (special) {
+                    break;
+                }
+                listEnd = size;
+            }
+            /**线程切断**/
+            List<Server> sunList = list.subList(listStart,listEnd);
+            /**子线程初始化**/
+            sunCallable = new StopCallable(i,sunList);
+            /***多线程执行***/
+            futureList.add(taskExecutor.submit(sunCallable));
+        }
+        /**对各个线程段结果进行解析**/
+        List<Server> s = new ArrayList<>();
+        for(Future<List<Server>> future : futureList){
+        	s.addAll(future.get());
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("耗时:"+ (endTime-startTime)+"ms");
+        return s;
+    }
+	public static int getThreadSize(int size){
+		int threadSize = 10;
+		if(size<=50){
+			threadSize = 5;
+		}else if(size>150 && size<=250){
+			threadSize = 15;
+		}else if(size>250 && size<=350){
+			threadSize = 20;
+		}
+		return threadSize;
+	}
+	
+    /**
+     *远程获取文件内容
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/readData", produces = "application/json;charset=UTF-8")
+    public Map readData(String ip,String path) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(ip)){
+				String command = "cat "+path;
+				DataSourceContextHolder.setDbType("ds_mop");
+				Servers s = serversService.findone(ip);
+				String strData = RemoteTxt.readTxt(ip,s.getName(),s.getPassword(),command);
+				//保存历史日志表
+		 		HistoryLog h = new HistoryLog();
+		 		h.setName(ip+","+path);
+		 		h.setType("2");
+		 		historyLogService.insert(h);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+		        result.put("strData", strData);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *远程覆盖写入txt文件内容
+     * @throws UnsupportedEncodingException 
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/writeData", produces = "application/json;charset=UTF-8")
+    public Map writeData(HttpServletRequest request) throws UnsupportedEncodingException {
+    	System.out.println(request.getCharacterEncoding());
+    	String str = request.getParameter("str");
+    	//str = new String(str.getBytes(),"UTF-8");
+    	String ip = request.getParameter("ip");
+    	String path = request.getParameter("path");//文件路径
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(ip)){
+				DataSourceContextHolder.setDbType("ds_mop");
+				Servers s = serversService.findone(ip);
+				String[] sp = path.split("\\.");
+				String backPath = sp[0]+"back."+sp[1];
+				int j = RemoteTxt.backups(ip,s.getName(),s.getPassword(),path,backPath);//备份数据
+				if(j>0){
+					int i = RemoteTxt.writeTxt(str,ip,s.getName(),s.getPassword(),path);
+					if(i>0){
+						String command = "cat "+path;
+						String strData = RemoteTxt.readTxt(ip,s.getName(),s.getPassword(),command);
+				        result.put("code", "200");
+				        result.put("msg", "成功!");
+				        result.put("strData", strData);
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *远程获取定时任务文件
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getCrontab", produces = "application/json;charset=UTF-8")
+    public Map getCrontab(String ip) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(ip)){
+				String command = "cat /etc/crontab";
+				DataSourceContextHolder.setDbType("ds_mop");
+				Servers s = serversService.findone(ip);
+				String strData = RemoteTxt.readFileCommand(command,ip,s.getName(),s.getPassword());
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+		        result.put("strData", strData);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *远程保存定时任务文件
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/saveCrontab", produces = "application/json;charset=UTF-8")
+    public Map saveCrontab(String str,String ip) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(ip)){
+				DataSourceContextHolder.setDbType("ds_mop");
+				Servers s = serversService.findone(ip);
+				String command = "echo \"" + str + "\" > /etc/crontab";
+				int i = RemoteTxt.writeFileCommand(command,ip,s.getName(),s.getPassword());
+				if(i>0){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *远程执行linux命令
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/commandOperation", produces = "application/json;charset=UTF-8")
+    public Map commandOperation(String str,String ip) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(ip)){
+				DataSourceContextHolder.setDbType("ds_mop");
+				Servers ss = serversService.findone(ip);
+				String s = RemoteTxt.readFileCommand(str,ip,ss.getName(),ss.getPassword());
+				//保存历史日志表
+		 		HistoryLog h = new HistoryLog();
+		 		h.setName(ip+","+str);
+		 		h.setType("3");
+		 		historyLogService.insert(h);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+		        result.put("s", s);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 根据ip查询列表
+     * @param request
+     * @param response
+     * @throws Exception
+     */
+	@RequestMapping(value = "/getIpInfoList")
+	public void getIpInfoList(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+		String ip = request.getParameter("ip");//平台id
+		
+/*    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;*/
+    	HashMap params = new HashMap();
+		params.put("page",0);
+		params.put("limit",1000);
+		
+		params.put("ip",ip);
+		
+		DataSourceContextHolder.setDbType("ds_mop");
+		int count = jiexisuduService.getTotal(params);
+		List<Jiexisudu> result = jiexisuduService.find(params);
+		for(Jiexisudu j:result){
+			String[] split = j.getDate_time().split(" ");
+			j.setDate_time(split[0]);
+			String[] split1 = split[1].split(":");
+			String time = split1[0]+":"+split1[1];
+			j.setTime(time);
+		}
+
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+	}
+    /**
+     *远程获取日志文件路径
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getLogTxtPath", produces = "application/json;charset=UTF-8")
+    public Map getLogTxtPath(String ip,String path) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(ip)){
+				String command = "cat "+path;
+				DataSourceContextHolder.setDbType("ds_mop");
+				Servers s = serversService.findone(ip);
+				String strData = RemoteTxt.getLogTxt(ip,s.getName(),s.getPassword(),command);
+				if(StringUtils.isNotBlank(strData)){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+			        result.put("strData", strData);
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *根据id获取服务器信息
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getServerById", produces = "application/json;charset=UTF-8")
+    public Map getServerById(String id) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(id)){
+				DataSourceContextHolder.setDbType("ds_mop");
+				Server s = serverService.findone(Integer.parseInt(id));
+				if(s!=null){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+			        result.put("serverInfo", s);
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 获取服务ip地址
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getServersIp", produces = "application/json;charset=UTF-8")
+    public Map getServersIp() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        List<Servers> s1 = serversService.findAll();
+        if(s1.size()>0){
+	        result.put("code", "200");
+	        result.put("msg", "成功!");
+	        result.put("Servers", s1);
+        }
+        return result;
+    }
+    @RequestMapping("exportExcel")
+    public void exportExcel(String date,HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	getJd_TMExcel.getColumnComments(date,request,response);
+    }
+}

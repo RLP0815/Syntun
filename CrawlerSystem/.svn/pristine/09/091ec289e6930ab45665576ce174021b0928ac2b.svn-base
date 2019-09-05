@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.CrawlerJD144InitUrlListDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="CrawlerJD144InitUrlList" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="urlStr" column="url_str" jdbcType="VARCHAR" />
+    <result property="urlGroup" column="url_group" jdbcType="INTEGER" />
+    <result property="patternTable" column="pattern_table" jdbcType="VARCHAR" />
+    <result property="urlStatus" column="url_status" jdbcType="INTEGER" />
+    <result property="urlData" column="url_data" jdbcType="VARCHAR" />
+    <result property="urlCharset" column="url_charset" jdbcType="VARCHAR" />
+    <result property="sortId" column="sort_id" jdbcType="INTEGER" />
+  </resultMap>
+
+  <select id="selectCrawlerJD144InitUrlList" resultType="CrawlerJD144InitUrlList">
+    select * FROM init_url_list
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM init_url_list ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM init_url_list
+    <if test="urlStr != null" > where url_str like CONCAT('%',#{urlStr},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from init_url_list where url_str like CONCAT('%',#{urlStr},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from init_url_list where 1=1 
+     <if test="urlStr != null" > and url_str like CONCAT('%',#{urlStr},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into init_url_list (url_str, url_group, pattern_table, url_status, url_data, 
+    							url_charset, sort_id)
+    values (#{urlStr}, #{urlGroup}, #{patternTable}, #{urlStatus}, #{urlData},
+    	#{urlCharset}, #{sortId})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update init_url_list set url_str = #{urlStr}, 
+  		url_group = #{urlGroup},
+  		pattern_table = #{patternTable},
+  		url_status = #{urlStatus},
+  		url_data = #{urlData},
+  		url_charset = #{urlCharset},
+  		sort_id = #{sortId} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from init_url_list where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from init_url_list where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

@@ -1,0 +1,44 @@
+package com.syntun.controller.systemlog;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import com.syntun.entity.Server;
+import com.syntun.util.RemoteShellExecutor;
+import com.syntun.util.Shell;
+/**
+ * 停止所有服务器线程
+ * Created by wangdong on 2019/2/14.
+ */
+
+public class StopCallable implements Callable<List<Server>> {
+
+    /**当前是属于第几段线程**/
+    private int pageIndex;
+    
+    private List<Server> list;
+
+    public StopCallable(int pageIndex,List<Server> list){
+        this.pageIndex = pageIndex;
+        this.list = list;
+    }
+
+    @Override
+    public List<Server> call() throws Exception {
+        System.err.println(String.format("pageIndex:%s size:%s",pageIndex,list.size()));
+        if(null != list && list.size() >0){
+            for(Server s: list){
+                try {
+                	//Map map = RemoteShellExecutor.exec(s.getStoppath(),s.getIp(),s.getName(),s.getPassword());
+            		String res = Shell.exec(s.getIp(),s.getName(),s.getPassword(), 22,s.getStoppath());
+            		System.out.println(Thread.currentThread().getName()+":"+res);
+                } catch (Exception e) {
+                	e.printStackTrace();
+                    s.setException("异常");
+                }
+            }
+        }
+        return list;
+    }
+}

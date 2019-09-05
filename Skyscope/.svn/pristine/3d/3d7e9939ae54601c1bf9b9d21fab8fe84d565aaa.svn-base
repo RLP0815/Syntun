@@ -1,0 +1,203 @@
+package com.syntun.zother;
+
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import com.syntun.etl.tools.BaseConnectSql;
+import com.syntun.etl.tools.BaseDao;
+import com.syntun.etl.tools.BaseInsertData;
+import com.syntun.etl.tools.ConvertSql;
+import com.syntun.util.SyntunEmail;
+
+public class TmallStock {
+	/**
+	 * 结果sql集合
+	 */
+	public static List<String> tmallStockResult = new ArrayList<String>();
+	
+	public static void main(String[] args) {
+		String dateStr = "2018-10-21";
+		getResult(dateStr);
+		System.exit(0);
+	}
+	
+	public static void getResult(String dateStr) {
+		// 63数据库，
+		Connection conn63 = BaseConnectSql.getConn("192.168.0.63:3306","skyscope","wgdata","syntun-000");
+		// 生成主键的列集合
+		List<String> keyList = new ArrayList<String>();
+		keyList.add("product_id");
+		// 读取条件
+		HashMap<String, String> filter = new HashMap<String, String>();
+		filter.put("get_date", dateStr);
+		// 排序
+		String orderByt = "product_id,get_data_time";
+		// 读取列表
+		HashMap<String, List<HashMap<String, String>>> stockTotal = BaseDao.getProductStockList("wgdata_tmallsuper.product_buy_total_2018_10_18_01",
+				filter, keyList, orderByt, conn63);
+		
+		// 生成主键的列集合
+		List<String> keyLists = new ArrayList<String>();
+		keyLists.add("operation_product_id");
+		// 排序
+		String orderByl = "operation_product_id,HOUR,MIN";
+		// 读取列表
+		HashMap<String, List<HashMap<String, String>>> stockList = BaseDao.getProductStockList("skyscope.shop_product_Stock_list",
+				filter, keyLists, orderByl, conn63);
+		
+		List<String> productStockList = BaseDao.getField("skyscope.product_stock_day", conn63);
+		productStockList.remove("id");
+		System.out.println(productStockList);
+		BaseConnectSql.push(conn63);
+		
+		HashMap<String, String> stockTotalMap = new HashMap<String, String>();
+		// 循环遍历总销量，得出产品当天销量
+		for (String k : stockTotal.keySet()) {
+			List<HashMap<String, String>> stockTotalD = stockTotal.get(k);
+			int i = 0;
+			int maxTotal = 0;
+			int minTotal = 0;
+			for (HashMap<String, String> Map : stockTotalD) {
+				if(i==0){
+					maxTotal = Integer.parseInt(Map.get("buy_total"));
+					minTotal = Integer.parseInt(Map.get("buy_total"));
+				}else{
+					if(Integer.parseInt(Map.get("buy_total"))<minTotal){
+						minTotal = Integer.parseInt(Map.get("buy_total"));
+					}
+					if(Integer.parseInt(Map.get("buy_total"))>maxTotal){
+						maxTotal = Integer.parseInt(Map.get("buy_total"));
+					}
+				}
+				i++;
+			}
+			int j = 0;
+			for (HashMap<String, String> Map : stockTotalD) {
+				if(j==0){
+					if(maxTotal/Integer.parseInt(Map.get("buy_total")) < 20){
+						minTotal = Integer.parseInt(Map.get("buy_total"));
+					}else{
+						minTotal = maxTotal;
+					}
+				}else{
+					if(Integer.parseInt(Map.get("buy_total"))<minTotal && Integer.parseInt(Map.get("buy_total"))!=0){
+						if(maxTotal/Integer.parseInt(Map.get("buy_total")) < 20){
+							minTotal = Integer.parseInt(Map.get("buy_total"));
+						}
+					}
+				}
+				j++;
+			}
+			stockTotalMap.put(k, (maxTotal-minTotal)+"@"+maxTotal);
+		}
+//		System.out.println("总销量计算结果");
+//		for (String k : stockTotalMap.keySet()) {
+//			System.out.println(k + ":" + stockTotalMap.get(k));
+//		}
+		
+		HashMap<String, Integer> stockListMap = new HashMap<String, Integer>();
+		// 循环遍历库存，得出产品当天销量
+		for (String k : stockList.keySet()) {
+			List<HashMap<String, String>> stockListD = stockList.get(k);
+			int i = 0;
+			int frontList = 0;
+			int afterList = 0;
+			int buyTotal = 0;
+			for (HashMap<String, String> Map : stockListD) {
+				if(i==0){
+					frontList = Integer.parseInt(Map.get("Stock"));
+					afterList = Integer.parseInt(Map.get("Stock"));
+				}else{
+					frontList = afterList;
+					afterList = Integer.parseInt(Map.get("Stock"));
+				}
+				i++;
+				buyTotal = buyTotal + ((frontList-afterList)>0 && (frontList-afterList)<1000?frontList-afterList:0);
+			}
+			stockListMap.put(k, buyTotal);
+		}
+//		System.out.println("库存计算结果");
+//		for (String k : stockListMap.keySet()) {
+//			System.out.println(k + ":" + stockListMap.get(k));
+//		}
+		
+		// 比较
+		for (String k : stockTotalMap.keySet()) {
+			HashMap<String, String> filedMap = new HashMap<String, String>();
+			if (stockListMap.containsKey(k)){
+				filedMap.put("product_id", "");
+				filedMap.put("operation_product_id", k);
+				filedMap.put("shop_id", "");
+				filedMap.put("platform_id", "");
+				filedMap.put("stock", 
+						(Integer.parseInt(stockTotalMap.get(k).split("@")[0])-stockListMap.get(k))>0?stockTotalMap.get(k).split("@")[0]:stockListMap.get(k).toString());
+				filedMap.put("total_stock", stockTotalMap.get(k).split("@")[0]);
+				filedMap.put("list_stock", stockListMap.get(k).toString());
+				filedMap.put("max_stock", stockTotalMap.get(k).split("@")[1]);
+				filedMap.put("get_date", dateStr);
+				
+				String sql = ConvertSql.getSql("product_stock_day", productStockList, filedMap);
+				tmallStockResult.add(sql);
+			}else{
+				filedMap.put("product_id", "");
+				filedMap.put("operation_product_id", k);
+				filedMap.put("shop_id", "");
+				filedMap.put("platform_id", "");
+				filedMap.put("stock", stockTotalMap.get(k).split("@")[0]);
+				filedMap.put("total_stock", stockTotalMap.get(k).split("@")[0]);
+				filedMap.put("list_stock", "");
+				filedMap.put("max_stock", stockTotalMap.get(k).split("@")[1]);
+				filedMap.put("get_date", dateStr);
+				
+				String sql = ConvertSql.getSql("product_stock_day", productStockList, filedMap);
+				tmallStockResult.add(sql);
+			}
+		}
+		// 比较
+		for (String k : stockListMap.keySet()) {
+			HashMap<String, String> filedMap = new HashMap<String, String>();
+			if (stockTotalMap.containsKey(k)){
+				continue;
+			}else{
+				filedMap.put("product_id", "");
+				filedMap.put("operation_product_id", k);
+				filedMap.put("shop_id", "");
+				filedMap.put("platform_id", "");
+				filedMap.put("stock", stockListMap.get(k).toString());
+				filedMap.put("total_stock", "");
+				filedMap.put("list_stock", stockListMap.get(k).toString());
+				filedMap.put("max_stock", "");
+				filedMap.put("get_date", dateStr);
+				
+				String sql = ConvertSql.getSql("product_stock_day", productStockList, filedMap);
+				tmallStockResult.add(sql);
+			}
+		}
+		
+		System.out.println("---计算结果条数：  ===" + tmallStockResult.size());
+//		for(String price : tmallStockResult) {
+//			System.out.println(price);
+//		}
+			
+		Thread t1 = new Thread(new BaseInsertData(tmallStockResult));
+		t1.start();
+		
+		boolean isAlice = true;
+		while(isAlice){
+			if(!t1.isAlive()){
+				isAlice = false;
+				try {
+					String text = "天猫销量计算完成，请注意核查！ \n ";
+					System.out.println(text);
+//					String[] emails = { "xiaoran.dai@syntun.com","liping.ren@syntun.com"};	
+//					SyntunEmail.sendSimpleEmail(emails, "天猫销量计算结果", text, "b", "text");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} 
+		}
+		
+	}
+}

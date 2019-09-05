@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.RolePermissionDao" >
+  
+  <delete id="deleteByRoid" parameterType="java.lang.String" >
+    delete from sys_role_permission where sys_role_id = #{roid}
+  </delete>
+  
+  <insert id="insert" parameterType="com.syntun.entity.RolePermission" >
+    insert into sys_role_permission (ID, sys_role_id, sys_permission_id)
+    values (#{id}, #{sys_role_id}, #{sys_permission_id})
+  </insert>
+  
+</mapper>

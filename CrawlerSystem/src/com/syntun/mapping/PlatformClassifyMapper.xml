@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.PlatformClassifyDao" >
+  <resultMap id="BaseResultMap" type="com.syntun.entity.PlatformClassify" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="platformid" property="platformid" jdbcType="VARCHAR" />
+    <result column="platformname" property="platformname" jdbcType="VARCHAR" />
+    <result column="onecategoryid" property="onecategoryid" jdbcType="VARCHAR" />
+    <result column="onecategoryname" property="onecategoryname" jdbcType="VARCHAR" />
+    <result column="twocategoryid" property="twocategoryid" jdbcType="VARCHAR" />
+    <result column="twocategoryname" property="twocategoryname" jdbcType="VARCHAR" />
+    <result column="threecategoryid" property="threecategoryid" jdbcType="VARCHAR" />
+    <result column="threecategoryname" property="threecategoryname" jdbcType="VARCHAR" />
+    <result column="createtime" property="createtime" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, platformid, platformname, onecategoryid, onecategoryname, twocategoryid, twocategoryname, 
+    threecategoryid, threecategoryname, createtime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from platform_classify
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from platform_classify
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.syntun.entity.PlatformClassify" >
+    insert into platform_classify (platformid, platformname, 
+      onecategoryid, onecategoryname, twocategoryid, 
+      twocategoryname, threecategoryid, threecategoryname)
+    values (#{platformid,jdbcType=VARCHAR}, #{platformname,jdbcType=VARCHAR}, 
+      #{onecategoryid,jdbcType=VARCHAR}, #{onecategoryname,jdbcType=VARCHAR}, #{twocategoryid,jdbcType=VARCHAR}, 
+      #{twocategoryname,jdbcType=VARCHAR}, #{threecategoryid,jdbcType=VARCHAR}, #{threecategoryname,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.syntun.entity.PlatformClassify" >
+    insert into platform_classify
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="platformid != null" >
+        platformid,
+      </if>
+      <if test="platformname != null" >
+        platformname,
+      </if>
+      <if test="onecategoryid != null" >
+        onecategoryid,
+      </if>
+      <if test="onecategoryname != null" >
+        onecategoryname,
+      </if>
+      <if test="twocategoryid != null" >
+        twocategoryid,
+      </if>
+      <if test="twocategoryname != null" >
+        twocategoryname,
+      </if>
+      <if test="threecategoryid != null" >
+        threecategoryid,
+      </if>
+      <if test="threecategoryname != null" >
+        threecategoryname,
+      </if>
+      <if test="createtime != null" >
+        createtime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="platformid != null" >
+        #{platformid,jdbcType=VARCHAR},
+      </if>
+      <if test="platformname != null" >
+        #{platformname,jdbcType=VARCHAR},
+      </if>
+      <if test="onecategoryid != null" >
+        #{onecategoryid,jdbcType=VARCHAR},
+      </if>
+      <if test="onecategoryname != null" >
+        #{onecategoryname,jdbcType=VARCHAR},
+      </if>
+      <if test="twocategoryid != null" >
+        #{twocategoryid,jdbcType=VARCHAR},
+      </if>
+      <if test="twocategoryname != null" >
+        #{twocategoryname,jdbcType=VARCHAR},
+      </if>
+      <if test="threecategoryid != null" >
+        #{threecategoryid,jdbcType=VARCHAR},
+      </if>
+      <if test="threecategoryname != null" >
+        #{threecategoryname,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        #{createtime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.syntun.entity.PlatformClassify" >
+    update platform_classify
+    <set >
+      <if test="platformid != null" >
+        platformid = #{platformid,jdbcType=VARCHAR},
+      </if>
+      <if test="platformname != null" >
+        platformname = #{platformname,jdbcType=VARCHAR},
+      </if>
+      <if test="onecategoryid != null" >
+        onecategoryid = #{onecategoryid,jdbcType=VARCHAR},
+      </if>
+      <if test="onecategoryname != null" >
+        onecategoryname = #{onecategoryname,jdbcType=VARCHAR},
+      </if>
+      <if test="twocategoryid != null" >
+        twocategoryid = #{twocategoryid,jdbcType=VARCHAR},
+      </if>
+      <if test="twocategoryname != null" >
+        twocategoryname = #{twocategoryname,jdbcType=VARCHAR},
+      </if>
+      <if test="threecategoryid != null" >
+        threecategoryid = #{threecategoryid,jdbcType=VARCHAR},
+      </if>
+      <if test="threecategoryname != null" >
+        threecategoryname = #{threecategoryname,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        createtime = #{createtime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.syntun.entity.PlatformClassify" >
+    update platform_classify
+    set platformid = #{platformid,jdbcType=VARCHAR},
+      platformname = #{platformname,jdbcType=VARCHAR},
+      onecategoryid = #{onecategoryid,jdbcType=VARCHAR},
+      onecategoryname = #{onecategoryname,jdbcType=VARCHAR},
+      twocategoryid = #{twocategoryid,jdbcType=VARCHAR},
+      twocategoryname = #{twocategoryname,jdbcType=VARCHAR},
+      threecategoryid = #{threecategoryid,jdbcType=VARCHAR},
+      threecategoryname = #{threecategoryname,jdbcType=VARCHAR},
+      createtime = #{createtime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  <insert id="insertByBatch" parameterType="java.util.List">
+       insert IGNORE into platform_classify (platformid, platformname, 
+      onecategoryid, onecategoryname, twocategoryid, 
+      twocategoryname, threecategoryid, threecategoryname,threecategoryurl)
+       values
+       <foreach collection="list" item="item" index="index" separator=",">
+           (#{item.platformid,jdbcType=VARCHAR}, #{item.platformname,jdbcType=VARCHAR},#{item.onecategoryid,jdbcType=VARCHAR},#{item.onecategoryname,jdbcType=VARCHAR}
+           ,#{item.twocategoryid,jdbcType=VARCHAR},#{item.twocategoryname,jdbcType=VARCHAR},#{item.threecategoryid,jdbcType=VARCHAR},#{item.threecategoryname,jdbcType=VARCHAR},#{item.threecategoryurl,jdbcType=VARCHAR})
+       </foreach>
+   </insert>
+   
+  <select id="find" parameterType="map" resultType="com.syntun.entity.PlatformClassify">
+     SELECT * FROM platform_classify WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     <if test="onecategoryname!=null and onecategoryname!=''">
+         AND onecategoryname like '%${onecategoryname}%'
+     </if>
+     <if test="twocategoryname!=null and twocategoryname!=''">
+         AND twocategoryname like '%${twocategoryname}%'
+     </if>
+     <if test="threecategoryname!=null and threecategoryname!=''">
+         AND threecategoryname like '%${threecategoryname}%'
+     </if>
+     ORDER BY createtime desc
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM platform_classify WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     <if test="onecategoryname!=null and onecategoryname!=''">
+         AND onecategoryname like '%${onecategoryname}%'
+     </if>
+     <if test="twocategoryname!=null and twocategoryname!=''">
+         AND twocategoryname like '%${twocategoryname}%'
+     </if>
+     <if test="threecategoryname!=null and threecategoryname!=''">
+         AND threecategoryname like '%${threecategoryname}%'
+     </if>
+ </select>
+ 
+ <select id="findWebsiteTable" parameterType="map" resultType="com.syntun.entity.WebsiteTable">
+     SELECT * FROM website_table WHERE 1=1
+     <if test="websiteid!=null and websiteid!=''">
+         AND websiteid=#{websiteid}
+     </if>
+     <if test="tablename!=null and tablename!=''">
+         AND tablename=#{tablename}
+     </if>
+ </select>
+ 
+  <select id="getBydatabase"  parameterType="java.lang.String"  resultType="java.lang.String">
+    select DISTINCT(data_base) from table_unique_key
+  </select>
+  
+  <select id="getBytable"  parameterType="java.lang.String"  resultType="java.lang.String">
+    select DISTINCT(table_name) from table_unique_key where data_base = #{databasename}
+  </select>
+</mapper>

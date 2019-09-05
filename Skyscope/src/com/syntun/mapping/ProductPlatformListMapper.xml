@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.ProductPlatformListDao" >
+  <resultMap id="BaseResultMap" type="ProductPlatformList" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="operationProductId" column="operation_product_id" jdbcType="VARCHAR" />
+    <result property="uid" column="uid" jdbcType="INTEGER"/>
+    <result property="shopId" column="shop_id" jdbcType="INTEGER"/>
+    <result property="platformId" column="platform_id" jdbcType="INTEGER"/>
+    <result property="skuId" column="sku_id" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectRecord" resultType="ProductPlatformList">
+    select * FROM product_platform_list
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map"  resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM product_platform_list
+    <if test="uid != null" > where uid = #{uid} </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from product_platform_list ORDER BY id DESC
+  </select>
+  
+  <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from product_platform_list where 1=1 
+     <if test="uid != null" > and uid = #{uid} </if>
+      ORDER BY platform_id ASC, id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into product_platform_list (operation_product_id, uid, shop_id, platform_id, sku_id)
+    values (#{operationProductId}, #{uid}, 
+    		#{shopId}, #{platformId}, 
+    		#{skuId})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update product_platform_list set operation_product_id = #{operationProductId}, 
+  		uid = #{uid},
+  		shop_id = #{shopId}, 
+  		platform_id = #{platformId},
+  		sku_id = #{skuId}
+  		where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from product_platform_list where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from product_platform_list where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+</mapper>

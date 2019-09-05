@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.FilterUrlDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="filterUrl" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="urlGroup" column="url_group" />
+    <result property="sortId" column="sort_id" />
+  </resultMap>
+
+  <select id="selectfilterUrl" resultType="filterUrl">
+    select * FROM filter_url
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM filter_url ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM filter_url
+    <if test="urlGroup != null" > where url_group like CONCAT('%',#{urlGroup},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from filter_url where url_group like CONCAT('%',#{urlGroup},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from filter_url where 1=1 
+     <if test="urlGroup != null" > and url_group like CONCAT('%',#{urlGroup},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into filter_url (url_group, sort_id)
+    values (#{urlGroup}, #{sortId})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update filter_url set
+  		url_group = #{urlGroup},
+  		sort_id = #{sortId} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from filter_url where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from filter_url where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  <select id="getKeyValueCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM url_key_value
+  </select>
+  
+   <select id="getKeyValueList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select url_key url_group, url_value sort_id from url_key_value ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addKeyValueRecord" parameterType="java.util.Map" >
+    INSERT IGNORE INTO url_key_value(url_key,url_value) VALUES
+    <if test="urlKey1 != null and urlValue1 != null" > (#{urlKey1},#{urlValue1}) </if>
+    <if test="urlKey2 != null and urlValue2 != null" > ,(#{urlKey2},#{urlValue2}) </if>
+    <if test="urlKey3 != null and urlValue3 != null" > ,(#{urlKey3},#{urlValue3}) </if>
+    <if test="urlKey4 != null and urlValue4 != null" > ,(#{urlKey4},#{urlValue4}) </if>
+    <if test="urlKey5 != null and urlValue5 != null" > ,(#{urlKey5},#{urlValue5}) </if>
+    <if test="urlKey6 != null and urlValue6 != null" > ,(#{urlKey6},#{urlValue6}) </if>
+    <if test="urlKey7 != null and urlValue7 != null" > ,(#{urlKey7},#{urlValue7}) </if>
+    <if test="urlKey8 != null and urlValue8 != null" > ,(#{urlKey8},#{urlValue8}) </if>
+    <if test="urlKey9 != null and urlValue9 != null" > ,(#{urlKey9},#{urlValue9}) </if>
+    <if test="urlKey10 != null and urlValue10 != null" > ,(#{urlKey10},#{urlValue10}) </if>
+  </insert>
+  
+</mapper>

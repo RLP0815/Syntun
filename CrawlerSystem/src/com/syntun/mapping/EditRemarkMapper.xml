@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.EditRemarkDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="EditRemark" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="remarkId" column="remark_id" jdbcType="VARCHAR" />
+    <result property="remarkName" column="remark_name" jdbcType="VARCHAR" />
+    <result property="serialNum" column="serial_num" jdbcType="INTEGER" />
+    <result property="remark" column="remark" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectEditRemark" resultType="EditRemark">
+    select * FROM edit_remark
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM edit_remark ORDER BY remark_id, serial_num ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM edit_remark
+    <if test="remarkId != null" > where remark_id like CONCAT('%',#{remarkId},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from edit_remark where remark_id like CONCAT('%',#{remarkId},'%') 
+     	ORDER BY remark_id, serial_num ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from edit_remark where 1=1 
+     <if test="remarkId != null" > and remark_id like CONCAT('%',#{remarkId},'%') </if>
+      ORDER BY remark_id, serial_num ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into edit_remark (remark_id, remark_name, serial_num, remark)
+    values (#{remarkId,jdbcType=VARCHAR}, #{remarkName,jdbcType=VARCHAR},
+    	#{serialNum,jdbcType=INTEGER},#{remark,jdbcType=VARCHAR})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update edit_remark set remark_id = #{remarkId,jdbcType=VARCHAR}, 
+  		remark_name = #{remarkName,jdbcType=VARCHAR},
+  		serial_num = #{serialNum,jdbcType=INTEGER},
+  		remark = #{remark,jdbcType=INTEGER} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from edit_remark where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from edit_remark where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

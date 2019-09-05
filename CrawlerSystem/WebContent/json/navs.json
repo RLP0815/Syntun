@@ -1,0 +1,80 @@
+{
+	"contentManagement": [
+		{
+			"title": "价格相关",
+			"icon": "&#xe630;",
+			"href": "page/syntun/price/PriceTab.jsp",
+			"spread": false
+		},
+		{
+			"title": "促销操作",
+			"icon": "icon-vip",
+			"href": "page/syntun/promo/PromotionTab.jsp",
+			"spread": false
+		},
+		{
+			"title": "字段替换",
+			"icon": "icon-text",
+			"href": "page/syntun/filed/FiledReplace.jsp",
+			"spread": false
+		},
+		{
+			"title": "执行操作",
+			"icon": "&#xe612;",
+			"href": "page/syntun/other/EtlExecute.jsp",
+			"spread": false
+		},
+		{
+			"title": "抛出错误",
+			"icon": "icon-guanbi",
+			"href": "page/syntun/other/ErrResult.jsp",
+			"spread": false
+		},
+		{
+			"title": "补充数据",
+			"icon": "icon-chakan",
+			"href": "page/syntun/other/ExecuteRun.jsp",
+			"spread": false
+		},
+		{
+			"title": "数据整理",
+			"icon": "&#xe6b2;",
+			"href": "page/syntun/other/ProductClear.jsp",
+			"spread": false
+		},
+		{
+			"title": "天猫促销",
+			"icon": "icon-text",
+			"href": "page/syntun/filed/TmallPromotion.jsp",
+			"spread": false
+		},
+		{
+			"title": "巡检用户",
+			"icon": "icon-text",
+			"href": "page/syntun/user/EtlUser.jsp",
+			"spread": false
+		}
+	],
+	"memberCenter": [
+		{
+			"title": "品类维护",
+			"icon": "icon-vip",
+			"href": "page/syntun/conJsp/CateAccount.jsp",
+			"spread": false
+		},
+		{
+			"title": "标准名称",
+			"icon": "icon-text",
+			"href": "page/syntun/conJsp/NameChart.jsp",
+			"spread": false
+		}
+	],
+	"systemeSttings": [
+		{
+			"title": "维护说明",
+			"icon": "icon-xiugai",
+			"href": "page/syntun/other/EditRemark.jsp",
+			"spread": false
+		}
+	]
+}

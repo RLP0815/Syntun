@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.Crawler144DataTableFiledListDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="Crawler144DataTableFiledList" >
+    <id property="filedId" column="filed_id" jdbcType="INTEGER" />
+    <result property="tableId" column="table_id" jdbcType="INTEGER" />
+    <result property="filedName" column="filed_name" jdbcType="VARCHAR" />
+    <result property="filedDataType" column="filed_data_type" jdbcType="INTEGER" />
+    <result property="defaultValue" column="default_value" jdbcType="VARCHAR" />
+    <result property="filedDataFun" column="filed_data_fun" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectCrawler144DataTableFiledList" resultType="Crawler144DataTableFiledList">
+    select * FROM data_table_filed_list
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM data_table_filed_list ORDER BY filed_id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM data_table_filed_list
+    <if test="filedName != null" > where filed_name like CONCAT('%',#{filedName},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from data_table_filed_list where filed_name like CONCAT('%',#{filedName},'%') 
+     	ORDER BY filed_id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from data_table_filed_list where 1=1 
+     <if test="filedName != null" > and filed_name like CONCAT('%',#{filedName},'%') </if>
+      ORDER BY filed_id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="filedId" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into data_table_filed_list (table_id, filed_name, filed_data_type, default_value, filed_data_fun)
+    values (#{tableId}, #{filedName}, #{filedDataType}, #{defaultValue}, #{filedDataFun})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update data_table_filed_list set
+  		table_id = #{tableId},
+  		filed_name = #{filedName},
+  		filed_data_type = #{filedDataType},
+  		default_value = #{defaultValue},
+  		filed_data_fun = #{filedDataFun}
+  		where filedId = #{filedId}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from data_table_filed_list where filed_id = #{filedId}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from data_table_filed_list where filed_id in
+    <foreach collection="list" index="index" item="filedId" open="(" separator="," close=")">
+      #{filedId}
+    </foreach>
+  </delete>
+
+</mapper>

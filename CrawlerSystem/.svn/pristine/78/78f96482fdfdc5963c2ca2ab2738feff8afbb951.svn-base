@@ -1,0 +1,12 @@
+layui.use(['form','element','layer','jquery'],function(){
+	var form = layui.form,
+        layer = parent.layer === undefined ? layui.layer : top.layer,
+        element = layui.element;
+        $ = layui.jquery;
+        
+    // 点击添加新tab；
+    $(".panel a").click(function(){
+        parent.addTab($(this));
+    })
+
+})

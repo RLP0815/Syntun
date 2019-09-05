@@ -1,0 +1,51 @@
+package com.syntun.controller.systemlog;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import org.springframework.context.ApplicationContext;
+
+import com.syntun.entity.Server;
+import com.syntun.entity.Servers;
+import com.syntun.service.ServersService;
+import com.syntun.util.RemoteShellExecutor;
+import com.syntun.util.Shell;
+import com.syntun.util.SpringContext;
+/**
+ * 停止所有服务器线程
+ * Created by wangdong on 2019/2/14.
+ */
+
+public class StopCallable implements Callable<List<Server>> {
+
+    /**当前是属于第几段线程**/
+    private int pageIndex;
+    
+    private List<Server> list;
+
+    public StopCallable(int pageIndex,List<Server> list){
+        this.pageIndex = pageIndex;
+        this.list = list;
+    }
+
+    @Override
+    public List<Server> call() throws Exception {
+        System.err.println(String.format("pageIndex:%s size:%s",pageIndex,list.size()));
+        if(null != list && list.size() >0){
+            for(Server s: list){
+                try {
+        	      	ApplicationContext appCtx = SpringContext.getApplicationContext();
+        	      	ServersService serversService = (ServersService)appCtx.getBean(ServersService.class);
+                	Servers s1 = serversService.findone(s.getIp());
+            		String res = Shell.exec(s.getIp(),s1.getName(),s1.getPassword(), 22,s.getStoppath());
+            		System.out.println(Thread.currentThread().getName()+":"+res);
+                } catch (Exception e) {
+                	e.printStackTrace();
+                    s.setException("异常");
+                }
+            }
+        }
+        return list;
+    }
+}

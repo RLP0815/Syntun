@@ -1,0 +1,14 @@
+package com.syntun.dao;
+
+import org.springframework.stereotype.Repository;
+import com.syntun.controller.systemlog.OperatorLog;
+
+/**
+ * 系统日志
+ * @author wangdong
+ */
+@Repository("systemLogDao")
+public interface SystemLogDao {
+	
+    int insert(OperatorLog o);
+}

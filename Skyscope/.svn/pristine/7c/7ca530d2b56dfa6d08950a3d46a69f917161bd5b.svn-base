@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.PriceComputeDao" >
+  <resultMap id="BaseResultMap" type="PriceCompute" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="platformId" column="platform_id" jdbcType="INTEGER"/>
+    <result property="promotionTypeName" column="promotion_type_name" jdbcType="VARCHAR" />
+    <result property="promotionPrice" column="promotion_price" jdbcType="VARCHAR" />
+    <result property="price" column="price" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectRecord" resultType="PriceCompute">
+    select * FROM price_promotion_compute
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map"  resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM price_promotion_compute
+    <if test="promotionTypeName != null" > where promotion_type_name like CONCAT('%',#{promotionTypeName},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from price_promotion_compute ORDER BY id DESC
+  </select>
+  
+  <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from price_promotion_compute where 1=1 
+     <if test="promotionTypeName != null" > and promotion_type_name like CONCAT('%',#{promotionTypeName},'%') </if>
+      ORDER BY id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into price_promotion_compute (platform_id, promotion_type_name, 
+    					promotion_price, price)
+    values (#{platformId,jdbcType=INTEGER}, #{promotionTypeName,jdbcType=VARCHAR}, 
+    		#{promotionPrice,jdbcType=VARCHAR}, #{price,jdbcType=VARCHAR})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update price_promotion_compute set platform_id = #{platformId,jdbcType=INTEGER}, 
+  		promotion_type_name = #{promotionTypeName,jdbcType=VARCHAR},
+  		promotion_price = #{promotionPrice,jdbcType=VARCHAR},
+  		price = #{price,jdbcType=VARCHAR}
+  		where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from price_promotion_compute where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from price_promotion_compute where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  
+</mapper>

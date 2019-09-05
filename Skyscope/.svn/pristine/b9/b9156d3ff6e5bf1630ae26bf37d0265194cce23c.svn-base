@@ -1,0 +1,110 @@
+package com.syntun.zother;
+
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import com.syntun.etl.tools.BaseDao;
+import com.syntun.etl.tools.BaseDaoSqlServer;
+import com.syntun.etl.tools.ConnectSql60;
+import com.syntun.etl.tools.ConnectSqlServer16;
+import com.syntun.etl.tools.ConvertSql;
+import com.syntun.etl.tools.InsertData;
+import com.syntun.util.SyntunEmail;
+
+public class CheckProductName {
+	/**
+	 * 结果sql集合
+	 */
+	public static List<String> checkResult = new ArrayList<String>();
+	
+	public static void getResult(String dateStr, String hour, String min, String email) {
+		/**
+		 * 结果sql集合
+		 */
+		checkResult = new ArrayList<String>();
+		Connection conn60 = ConnectSql60.getConn();
+		Connection conn16 = ConnectSqlServer16.getConn();
+		// 
+		List<String> resultFiledList = BaseDao.getField("skyscope.", conn60);
+		resultFiledList.remove("id");
+		List<String> keyList = new ArrayList<String>();
+		keyList.add("PRODUCT_ID");
+		// 读取标准名称
+		HashMap<String, String> productData = BaseDaoSqlServer.getProductData("[skyscope].[dbo].[PRODUCT_LIST]",keyList, conn16);
+		// 
+		List<String> keyListst = new ArrayList<String>();
+		keyListst.add("operation_product_id");
+		keyListst.add("product_id");
+		// 读取抓取名称
+		HashMap<String, String> getProductData = BaseDao.getProductName("skyscope.product_name", keyListst, conn60);	
+		
+		ConnectSql60.push(conn60);
+		ConnectSqlServer16.push(conn16);
+		
+		List<HashMap<String, String>> resultList = new ArrayList<HashMap<String, String>>();
+		//遍历采集产品名称
+		for(String k:getProductData.keySet()){
+			HashMap<String, String> resultMap = new HashMap<String, String>();
+			//String operationProductId = k.split("\001")[0];
+			String productId = k.split("\001")[1];
+			String getPrductName = getProductData.get(k);
+			String name = null;
+			int j = 0;
+			if(productData.containsKey(productId)){
+				String productName = productData.get(productId);
+				for(int i=0; i<productName.split(" ").length; i++){
+					String st = productName.split(" ")[i];
+					if(getPrductName.indexOf(st) == -1){
+						j+=1;
+						if(j == 0){
+							name = st;
+						}else{
+							name = name + "," + st;
+						}
+					}
+				}
+			}
+			if(j!=0){
+				resultMap.put("out_product_name", name);
+				resultMap.put("num", j+"");
+				resultList.add(resultMap);
+			}
+		}
+		
+		//遍历未匹配产品名称结果
+		if (resultList.size() != 0) {
+			for (HashMap<String, String> resultMap : resultList) {
+				
+				String sql = ConvertSql.getSql("skyscope.", resultFiledList, resultMap);
+				checkResult.add(sql);
+			}
+		}
+		System.out.println("---标准名称检查错误数据条数： "+ checkResult.size() + " ===");
+		Thread t1 = new Thread(new InsertData(checkResult));
+		t1.start();
+		boolean isAlice = true;
+		while(isAlice){
+			if(!t1.isAlive()){
+				isAlice = false;
+				try {
+					String text = "标准名称检查执行完成，请注意核查！ \n " + 
+							"标准名称匹配错误数据条数：" + resultList.size();
+					System.out.println(text);
+					if(!email.equals("")){
+						if(email.equals("liping.ren@syntun.com")){
+							String[] emails = {"liping.ren@syntun.com"};	
+							SyntunEmail.sendSimpleEmail(emails, "标准名称检查结果", text, "b", "text");
+						}else{
+							String[] emails = {email, "liping.ren@syntun.com"};	
+							SyntunEmail.sendSimpleEmail(emails, "标准名称检查结果", text, "b", "text");
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+}

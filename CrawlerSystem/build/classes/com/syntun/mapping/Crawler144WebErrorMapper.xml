@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.Crawler144WebErrorDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="Crawler144WebError" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="urlGroup" column="url_group" jdbcType="VARCHAR" />
+    <result property="errContentStr" column="err_content_str" jdbcType="VARCHAR" />
+    <result property="errContentResult" column="err_content_result" jdbcType="INTEGER" />
+  </resultMap>
+
+  <select id="selectCrawler144WebError" resultType="Crawler144WebError">
+    select * FROM web_error
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM web_error ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM web_error
+    <if test="urlGroup != null" > where url_group like CONCAT('%',#{urlGroup},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from web_error where url_group like CONCAT('%',#{urlGroup},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from web_error where 1=1 
+     <if test="urlGroup != null" > and url_group like CONCAT('%',#{urlGroup},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into web_error (url_group, err_content_str, err_content_result)
+    values (#{urlGroup}, #{errContentStr}, #{errContentResult})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update web_error set 
+  		url_group = #{urlGroup},
+  		err_content_str = #{errContentStr},
+  		err_content_result = #{errContentResult} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from web_error where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from web_error where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

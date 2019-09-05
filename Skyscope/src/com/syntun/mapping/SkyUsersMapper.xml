@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.SkyUsersDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="SkyUsers" >
+    <id property="id" column="ID" jdbcType="INTEGER" />
+    <result property="userName" column="user_name" jdbcType="VARCHAR" />
+    <result property="userId" column="user_id" jdbcType="VARCHAR" />
+    <result property="groupName" column="group_name" jdbcType="VARCHAR" />
+    <result property="groupId" column="group_id" jdbcType="INTEGER" />
+  </resultMap>
+
+  <select id="selectSkyUsers" resultType="SkyUsers">
+    select * FROM sky_users
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM sky_users ORDER BY id DESC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM sky_users
+    <if test="userName != null" > where user_name like CONCAT('%',#{userName},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from sky_users ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from sky_users where 1=1 
+     <if test="userName != null" > and user_name like CONCAT('%',#{userName},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into sky_users (user_name, user_id, group_name, group_id)
+    values (#{userName}, #{userId}, #{groupName}, #{groupId})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update sky_users set user_name = #{userName}, user_id = #{userId},
+  		group_name = #{groupName}, group_id = #{groupId} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from sky_users where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from sky_users where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  
+  <select id="getHkCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM need_hk_users
+    <if test="userName != null" > where user_name like CONCAT('%',#{userName},'%') </if>
+  </select>
+  
+   <select id="getHkList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from need_hk_users where 1=1 
+     <if test="userName != null" > and user_name like CONCAT('%',#{userName},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+
+  <insert id="addHkRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into need_hk_users (user_name, user_id, group_name, group_id)
+    values (#{userName}, #{userId}, '0', '0')
+  </insert>
+  
+  <delete id="delHkRecord" parameterType="java.util.Map">
+  	delete from need_hk_users where id = #{id}
+  </delete>
+  
+  <delete id="delAllHkRecord" parameterType="java.lang.Long">
+    delete from need_hk_users where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  <select id="getNoHkCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM sky_users where user_id not in (select user_id from need_hk_users)
+  </select>
+  
+   <select id="getNoHkList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from sky_users where user_id not in (select user_id from need_hk_users)
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+</mapper>

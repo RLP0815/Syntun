@@ -1,0 +1,498 @@
+package com.syntun.util;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HConnectionManager;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.filter.SubstringComparator;
+import org.apache.hadoop.hbase.util.Bytes;
+
+import org.apache.hadoop.hbase.filter.ByteArrayComparable;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
+
+/**
+ * 
+ * @author wangdong
+ * @date 2019-3-25下午2:18:22
+ *
+ */
+@SuppressWarnings("all")
+public class HBaseUtils {
+
+	/**
+	 * 加载连接配置
+	 */
+	HConnection hTablePool = null;
+	Configuration conf = new Configuration();
+
+	public HBaseUtils() {
+		conf = HBaseConfiguration.create();
+		conf.set("hbase.zookeeper.property.clientPort", "2181");
+		conf.set("hbase.zookeeper.quorum", "synhadoop123,synhadoop124,synhadoop125");
+		conf.set("hbase.rootdir", "hdfs://synhadoop124:9000/hbase");
+		conf.set("hbase.master", "synhadoop124:60000");
+		conf.set("hbase.regionserver.handler.count", "1000");
+		// conf.set("hfile.block.cache.size", "0.4"); //这是读比写多的情况
+		conf.setLong(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, 120000);
+		try {
+			hTablePool = HConnectionManager.createConnection(conf);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 多条插入
+	 */
+	public void save(Put put, String tableName) {
+		HTableInterface table = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			table.put(put);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	/**
+	 * 单条插入
+	 */
+	public void insert(String tableName, String rowKey, String family, String quailifer, String value) {
+		HTableInterface table = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			byte[] bytes = rowKey.getBytes();
+			Put put = new Put(bytes);
+			put.setWriteToWAL(false);
+			put.add(family.getBytes(), quailifer.getBytes(), value.getBytes());
+			table.put(put);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	/**
+	 * 表插入rowkey
+	 */
+	public void insertRowkey(String tableName, String rowKey) {
+		HTableInterface table = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			Put put = new Put(rowKey.getBytes());
+			// put.add(family.getBytes(), quailifer.getBytes(),
+			// value.getBytes()) ;
+			table.put(put);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	/**
+	 * 多条插入数据
+	 */
+	public void save(List<Put> putList, String tableName) {
+		if (putList != null && putList.size() > 0 && tableName != null && !"".equals(tableName)) {
+			HTableInterface table = null;
+			try {
+				table = hTablePool.getTable(tableName);
+				table.setAutoFlush(false); // 关闭自动刷新
+				table.setWriteBufferSize(10 * 1024 * 1024); // 设置缓存大小 10M
+				table.put(putList);
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					table.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * 根据rowKey查看记录
+	 */
+	public Result getOneRow(String tableName, String rowKey) {
+		HTableInterface table = null;
+		Result rsResult = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			Get get = new Get(rowKey.getBytes());
+			rsResult = table.get(get);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return rsResult;
+	}
+	
+	public List<Result> getRows(String tableName, String rowKeyLike) {
+		HTableInterface table = null;
+		List<Result> list = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			PrefixFilter filter = new PrefixFilter(rowKeyLike.getBytes());
+			Scan scan = new Scan();
+			scan.setFilter(filter);
+			ResultScanner scanner = table.getScanner(scan);
+			list = new ArrayList<Result>();
+			for (Result rs : scanner) {
+				list.add(rs);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return list;
+	}
+
+	public List<Result> getRows(String tableName, String rowKeyLike, String cols[]) {
+		HTableInterface table = null;
+		List<Result> list = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			PrefixFilter filter = new PrefixFilter(rowKeyLike.getBytes());
+			Scan scan = new Scan();
+			for (int i = 0; i < cols.length; i++) {
+				scan.addColumn("cf".getBytes(), cols[i].getBytes());
+			}
+			scan.setFilter(filter);
+			ResultScanner scanner = table.getScanner(scan);
+			list = new ArrayList<Result>();
+			for (Result rs : scanner) {
+				list.add(rs);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return list;
+	}
+
+	public List<Result> getRows(String tableName, String startRow, String stopRow) {
+		HTableInterface table = null;
+		List<Result> list = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			Scan scan = new Scan();
+			scan.setStartRow(startRow.getBytes());
+			scan.setStopRow(stopRow.getBytes());
+			ResultScanner scanner = table.getScanner(scan);
+			list = new ArrayList<Result>();
+			for (Result rsResult : scanner) {
+				list.add(rsResult);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return list;
+	}
+	
+	/**
+	 * 根据列族和列值查询数据
+	 * @param tableName
+	 * @param family
+	 * @param column
+	 * @return
+	 */
+	public List<Result> getColumn(String tableName, String family, String column,String value) {
+		HTableInterface table = null;
+		List<Result> list = null;
+		try {
+			table = hTablePool.getTable(tableName);
+			Scan scan = new Scan();
+			
+			SingleColumnValueFilter filter = new SingleColumnValueFilter(  
+				    Bytes.toBytes(family),  
+				    Bytes.toBytes(column),  
+				    CompareOp.EQUAL,  
+				    new SubstringComparator(value));  
+				filter.setFilterIfMissing(true);  //如果不设置为true，则那些不包含指定column的行也会返回
+				scan.setFilter(filter);  
+			ResultScanner scanner = table.getScanner(scan);
+			list = new ArrayList<Result>();
+			for (Result rsResult : scanner) {
+				list.add(rsResult);
+/*				for (Cell cell : rsResult.rawCells()){
+					System.out.println("RowName: " + new String(CellUtil.cloneRow(cell)));
+					System.out.println("Timetamp: " + cell.getTimestamp());
+					System.out.println("Column family: " + new String(CellUtil.cloneFamily(cell)));
+					System.out.println("row name: " + new String(CellUtil.cloneQualifier(cell)));
+					System.out.println("value: " + new String(CellUtil.cloneValue(cell)));
+					System.out.println("====================================================");
+				}*/
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				table.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * 创建表
+	 */
+	public int createTable(String tableName, String columsFamily, int isDel) {
+		int rs = 0;
+		HBaseAdmin hAdmin;
+		try {
+			hAdmin = new HBaseAdmin(conf);
+			HTableDescriptor tableDesc = new HTableDescriptor(tableName);
+			// 创建列族
+			HColumnDescriptor hc = new HColumnDescriptor(columsFamily);
+			tableDesc.addFamily(hc);
+			// 是否已存在相同的表
+			if (!hAdmin.tableExists(tableName)) {
+				hAdmin.createTable(tableDesc);
+				rs = 1;
+			} else {
+				if (isDel == 1) {
+					if (!hAdmin.isTableDisabled(tableName))
+						hAdmin.disableTable(tableName);
+					hAdmin.deleteTable(tableName);
+					hAdmin.createTable(tableDesc);
+					rs = 1;
+				} else {
+					rs = 2;
+				}
+			}
+			hAdmin.close();
+			hAdmin = null;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rs;
+	}
+    /**
+     * 根据表名显示所有数据
+     */
+    public void getAllRecord(String tableName) {
+      try {
+        HTable table = new HTable(conf, tableName);
+        Scan s = new Scan();
+        ResultScanner ss = table.getScanner(s);
+        for (Result result : ss) {
+			for (Cell cell : result.rawCells()){
+				System.out.println("RowName: " + new String(CellUtil.cloneRow(cell)));
+				System.out.println("Timetamp: " + cell.getTimestamp());
+				System.out.println("Column family: " + new String(CellUtil.cloneFamily(cell)));
+				System.out.println("row name: " + new String(CellUtil.cloneQualifier(cell)));
+				System.out.println("value: " + new String(CellUtil.cloneValue(cell)));
+				System.out.println("====================================================");
+			}
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    /**
+     * 根据表名和rowkey删除
+     * @param tableName
+     * @param key
+     */
+	public void deleteRecord(String tableName , String key)
+	{
+		try
+		{
+			HConnection conn = HConnectionManager.createConnection(conf);
+			HTable table = (HTable)conn.getTable(tableName);
+			Delete delete = new Delete(key.getBytes());
+			
+			table.delete(delete);
+			System.out.println("删除" + key +"成功...");
+		}
+		catch(Exception ex)
+		{
+			System.out.println("删除数据失败...");
+			ex.printStackTrace();
+		}
+	}
+	/**
+	 * 根据表名删除表
+	 * @param tableName
+	 * @return
+	 */
+	public boolean deleteTable (String tableName){
+		try {
+			HBaseAdmin admin = new HBaseAdmin(conf);
+			if(admin.tableExists(tableName))
+			{
+				admin.disableTable(tableName);
+				admin.deleteTable(tableName);
+				System.out.println("drop table " + tableName);
+			}
+			return true;
+		} catch (Exception e) {
+			System.out.println("删除" + tableName + "失败");
+			return false;
+		}
+	}
+	
+	/**
+	 * 多个列族，创建表
+	 * @param tableName
+	 * @param columnFamily
+	 * @throws Exception
+	 */
+	public void createTable (String tableName , String[] columnFamily) throws Exception{
+		
+		HBaseAdmin admin = new HBaseAdmin(conf);
+		if (admin.tableExists(tableName))
+		{
+			System.out.println(tableName + "已存在");
+			return ;
+			//System.exit(0);
+		}
+		
+		HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf(tableName));
+		
+		for (String colunm : columnFamily){
+			tableDescriptor.addFamily(new HColumnDescriptor(colunm));
+		}
+		admin.createTable(tableDescriptor);
+		System.out.println("Create table successfully..");
+	}
+
+	public List getAllTables() throws Exception{
+		
+		HBaseAdmin admin = new HBaseAdmin(conf);
+		List<String> tables = null;
+		if (admin != null)
+		{
+			try{
+				HTableDescriptor[] allTables = admin.listTables();
+				if(allTables.length > 0){
+					tables = new ArrayList<String>();
+				}else{
+					System.out.println("没表");
+				}
+				
+				for (HTableDescriptor tableDesc : allTables)
+				{
+					tables.add(tableDesc.getNameAsString());
+					System.out.println(tableDesc.getNameAsString());
+				}
+			}catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+		}
+		
+		return tables;
+	}
+	
+
+	
+	public static void main(String[] args) throws Exception {
+		HBaseUtils dao = new HBaseUtils();
+		//创建表
+/*        String tablename = "school_list";
+        String familys = "school_list";
+        dao.createTable(tablename.toUpperCase(), familys.toUpperCase(),0);*/
+		// List<Put> list = new ArrayList<Put>();
+		 //list.add(put) ;
+		//String tableName, String rowKey, String family, String quailifer, String value
+		//dao.insert("test","002","test","test02","测Hbase");//单条
+/*		Result rsResult = dao.getOneRow("test", "002");//根据rowkey查询
+        for (KeyValue kv : rsResult.raw()) {
+           System.out.print(new String(kv.getRow()) + " ");
+           System.out.print(new String(kv.getFamily()) + ":");
+           System.out.print(new String(kv.getQualifier()) + " ");
+           System.out.print(kv.getTimestamp() + " ");
+           System.out.println(new String(kv.getValue()));
+        }*/
+		//dao.deleteRecord("test","in");//根据列族删除数据
+		//dao.getAllRecord("test");//根据表查询数据
+/*		dao.deleteTable("WGDATA_SUNING.PRODUCT_INFO");//删除表
+		dao.deleteTable("WGDATA_SUNING.SORT_PRODUCT_DETAIL");//删除表
+*/		dao.getAllTables();//查询所有表
+		//dao.getAllRecord("WGDATA_SUNING.PRODUCT_INFO");//根据表查询数据
+		//dao.getColumn("PRODUCT_INFO","PRODUCT_INFO","product_id","10001606008");
+/*        //多条插入
+        List<Put> list = new ArrayList<Put>();
+        //设置列族
+		 Put put = new Put("002".getBytes());
+		 put.add("SCHOOL_LIST".getBytes(), "name".getBytes(), "王栋1".getBytes()) ;
+		 put.add("SCHOOL_LIST".getBytes(), "age".getBytes(), "29".getBytes()) ;
+		 put.add("SCHOOL_LIST".getBytes(), "sex".getBytes(), "女".getBytes()) ;
+		 put.add("SCHOOL_LIST".getBytes(), "birth".getBytes(), "19900325".getBytes()) ;
+		 list.add(put);
+		 dao.save(list, "SCHOOL_LIST");
+
+		dao.getAllRecord("SCHOOL_LIST");//根据表查询数据
+*/		
+	}
+	
+}

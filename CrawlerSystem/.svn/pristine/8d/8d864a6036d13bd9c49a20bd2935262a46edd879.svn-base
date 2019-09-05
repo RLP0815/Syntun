@@ -1,0 +1,51 @@
+package com.syntun.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.syntun.util.PropertiesUtil;
+import com.syntun.util.RemoteShellExecutor;
+
+
+/**
+ * 命令
+ */
+@Controller
+@RequestMapping(value = "/command")
+public class CommandController {
+	
+	PropertiesUtil util =PropertiesUtil.getInstance("./config/config.properties", true);
+	String ip = util.getPropertyValue("ip");
+	String name = util.getPropertyValue("name");
+	String password = util.getPropertyValue("password");
+    /**
+     *根据用户id查询用户权限
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/test", produces = "application/json;charset=UTF-8")
+    public Map test() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			RemoteShellExecutor executor = new RemoteShellExecutor(ip,name,password);
+			// 执行*.sh  后面2个参数
+			int exec = executor.exec("/root/test/b.sh wangdong 111111111");
+	        if(exec==0){
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+	        }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+
+}

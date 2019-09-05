@@ -1,0 +1,57 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>tail log</title>
+<script src="../../../js/jquery/jquery-3.3.1.js"></script>
+</head>
+<body>
+<input  id="ctx" style="display:none" value="${pageContext.request.contextPath}">
+	
+    <div id="log-container" style="height: 450px; overflow-y: scroll; background: #0d0d0d; color: #aaa; padding: 10px;">
+       <input type="text" id="sendMessageid" placeholder="tail -f /home/test/log/log_test.txt" style="width: 25%"/>
+       <input type="button" value="提交" onclick="sendMessage()"/>
+        <div>
+        </div>
+    </div>
+</body>
+<script>
+    $(document).ready(function() {
+
+    });
+    function sendMessage(){
+    	var sendMessageid = $("#sendMessageid").val();
+    	if(sendMessageid==''){
+    		alert("请输入内容！");
+    		return false;
+    	}
+        // 指定websocket路径
+        var websocket = new WebSocket('ws://localhost:8080/CrawlerSystem/log');
+        //接受服务器端返回数据
+        websocket.onmessage = function(event) {
+            // 接收服务端的实时日志并添加到HTML页面中
+            $("#log-container div").append(event.data);
+            // 滚动条滚动到最低部
+            $("#log-container").scrollTop($("#log-container div").height() - $("#log-container").height());
+        };
+        websocket.onopen = function()
+        {
+           // Web Socket 已连接上，使用 send() 方法发送数据
+           websocket.send(sendMessageid);
+        };
+        websocket.onclose = function()
+        { 
+           // 关闭 websocket
+           alert("连接已关闭..."); 
+        };
+        websocket.error = function()
+        { 
+           // 关闭 error
+           alert("连接出错..."); 
+        };
+    }
+</script>
+</body>
+</html>

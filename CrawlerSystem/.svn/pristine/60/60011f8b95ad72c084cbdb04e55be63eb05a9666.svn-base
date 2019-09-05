@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ModuleThreeDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="moduleThree" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="ipPort" column="ip_port" jdbcType="VARCHAR" />
+    <result property="dataBase" column="data_base" jdbcType="VARCHAR" />
+    <result property="tableName" column="table_name" jdbcType="VARCHAR" />
+    <result property="column1" column="column1" jdbcType="VARCHAR" />
+    <result property="columnB1" column="columnB1" jdbcType="VARCHAR" />
+    <result property="listKey" column="list_key" jdbcType="VARCHAR" />
+    <result property="listVal" column="list_val" jdbcType="VARCHAR" />
+    <result property="connectKey1" column="connect_key1" jdbcType="VARCHAR" />
+    <result property="connectBKey1" column="connectB_key1" jdbcType="VARCHAR" />
+    <result property="connectVal1" column="connect_val1" jdbcType="VARCHAR" />
+    <result property="connectKey2" column="connect_key2" jdbcType="VARCHAR" />
+    <result property="connectBKey2" column="connectB_key2" jdbcType="VARCHAR" />
+    <result property="connectVal2" column="connect_val2" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectmoduleThree" resultType="moduleThree">
+    select * FROM module_three
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM module_three ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM module_three where user_name = #{userName}
+    <if test="tableName != null" > and table_name like CONCAT('%',#{tableName},'%') </if>
+     <if test="method != null" > and method = #{method} </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from module_three where table_name like CONCAT('%',#{tableName},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from module_three where user_name = #{userName}
+     <if test="tableName != null" > and table_name like CONCAT('%',#{tableName},'%') </if>
+     <if test="method != null" > and method = #{method} </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert IGNORE into module_three (ip_port, data_base, table_name, column1, columnB1, 
+    	list_key, list_val, connect_key1, connectB_key1, connect_val1, connect_key2, connectB_key2, connect_val2,
+    	user_name, add_time, method)
+    values (#{ipPort}, #{dataBase}, #{tableName}, #{column1}, #{columnB1},
+    	#{listKey}, #{listVal}, #{connectKey1}, #{connectBKey1}, #{connectVal1}, #{connectKey2}, #{connectBKey2}, #{connectVal2},
+    	#{userName}, #{addTime}, #{method})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update module_three set
+  		ip_port = #{ipPort},
+  		data_base = #{dataBase},
+  		table_name = #{tableName},
+  		column1 = #{column1},
+  		columnB1 = #{columnB1},
+  		list_key = #{listKey},
+  		list_val = #{listVal},
+  		connect_key1 = #{connectKey1},
+  		connectB_key1 = #{connectBKey1},
+  		connect_val1 = #{connectVal1},
+  		connect_key2 = #{connectKey2},
+  		connectB_key2 = #{connectBKey2},
+  		connect_val2 = #{connectVal2} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from module_three where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from module_three where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  <select id="getDataBase" resultType="java.util.Map">
+    SELECT DISTINCT data_base id,data_base name FROM module_three where column2 = '0' ORDER BY data_base ASC
+  </select>
+  
+  <select id="getTableName" resultType="java.util.Map">
+    SELECT DISTINCT table_name id,table_name name FROM module_three where column2 = '0' ORDER BY table_name ASC
+  </select>
+  
+  <select id="getIllegalChar" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select illegal_char column1 from module_three_char where 1=1 ORDER BY id ASC
+  </select>
+  
+  <update id="editIllegalChar" parameterType="java.util.Map">
+  	update module_three_char set
+  		illegal_char = #{illegalChar} where id = #{id}
+  </update>
+  
+</mapper>

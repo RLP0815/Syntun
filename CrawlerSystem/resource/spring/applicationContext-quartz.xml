@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <description>系统调度器配置 </description>
+    
+        <!--调度工厂-->
+    <bean id="springjobschedulerfactorybean" lazy-init="false" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="sendEmailTrigger"/>
+            </list>
+        </property>
+    </bean>
+    
+        <!--触发器-->
+    <bean id="sendEmailTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="jugeEmailPassJob"></property>
+        <property name="cronExpression" value="0 0 10 * * ?"></property>
+    </bean>
+    
+    <bean id="jugeEmailPassJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject">
+            <ref bean="jugeEmailPass"/>
+        </property>
+        <property name="targetMethod">
+            <value>getAllWarning</value>
+        </property>
+        <property name="concurrent">
+            <value>false</value>
+        </property>
+    </bean>
+
+    <!--服务器预警发送邮件-->
+    <bean id="jugeEmailPass" class="com.syntun.service.impl.ServerServiceImpl"></bean>
+
+
+</beans>

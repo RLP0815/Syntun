@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ModuleOneDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="moduleOne" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="ipPort" column="ip_port" jdbcType="VARCHAR" />
+    <result property="dataBase" column="data_base" jdbcType="VARCHAR" />
+    <result property="tableName" column="table_name" jdbcType="VARCHAR" />
+    <result property="column1" column="column1" jdbcType="VARCHAR" />
+    <result property="column2" column="column2" jdbcType="VARCHAR" />
+    <result property="method" column="method" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectmoduleOne" resultType="moduleOne">
+    select * FROM module_one
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM module_one ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM module_one where 1=1
+     <if test="userName != null" > and user_name = #{userName} </if>
+    <if test="tableName != null" > and table_name like CONCAT('%',#{tableName},'%') </if>
+     <if test="method != null" > and method = #{method} </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from module_one where table_name like CONCAT('%',#{tableName},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from module_one where 1=1
+     <if test="userName != null" > and user_name = #{userName} </if>
+     <if test="tableName != null" > and table_name like CONCAT('%',#{tableName},'%') </if>
+     <if test="method != null" > and method = #{method} </if>
+      ORDER BY id ASC
+      <!-- <if test="page != null" > LIMIT #{page},#{limit} </if> -->
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert IGNORE into module_one (ip_port, data_base, table_name, column1, column2,
+    	user_name, add_time, method)
+    values (#{ipPort}, #{dataBase}, #{tableName}, #{column1}, #{column2},
+    	#{userName}, #{addTime}, #{method})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update module_one set
+  		ip_port = #{ipPort},
+  		data_base = #{dataBase},
+  		table_name = #{tableName},
+  		column1 = #{column1},
+  		column2 = #{column2} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from module_one where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from module_one where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  <select id="getDataBase" resultType="java.util.Map">
+    SELECT DISTINCT data_base id,data_base name FROM module_one where column2 = '0' ORDER BY data_base ASC
+  </select>
+  
+  <select id="getTableName" resultType="java.util.Map">
+    SELECT DISTINCT table_name id,table_name name FROM module_one where column2 = '0' ORDER BY table_name ASC
+  </select>
+</mapper>

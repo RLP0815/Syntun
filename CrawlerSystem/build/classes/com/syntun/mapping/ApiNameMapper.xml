@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.ApiNameDao" >
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from api_name where id = #{id}
+  </delete>
+  
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true" parameterType="com.syntun.entity.ApiName">
+    insert into api_name (apiname,apiaddress,backformat,reqmode,apiremarks)
+    values (#{apiname},#{apiaddress},#{backformat},#{reqmode},#{apiremarks})
+  </insert>
+  
+  <insert id="insertByBatch" parameterType="java.util.List">
+       insert IGNORE into api_name (platformid, platformname, 
+      onecategoryid, onecategoryname, twocategoryid, 
+      twocategoryname, threecategoryid, threecategoryname,threecategoryurl)
+       values
+       <foreach collection="list" item="item" index="index" separator=",">
+           (#{item.platformid,jdbcType=VARCHAR}, #{item.platformname,jdbcType=VARCHAR},#{item.onecategoryid,jdbcType=VARCHAR},#{item.onecategoryname,jdbcType=VARCHAR}
+           ,#{item.twocategoryid,jdbcType=VARCHAR},#{item.twocategoryname,jdbcType=VARCHAR},#{item.threecategoryid,jdbcType=VARCHAR},#{item.threecategoryname,jdbcType=VARCHAR},#{item.threecategoryurl,jdbcType=VARCHAR})
+       </foreach>
+  </insert>
+   
+  <select id="find" parameterType="map" resultType="com.syntun.entity.ApiName">
+     SELECT * FROM api_name WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     <if test="onecategoryname!=null and onecategoryname!=''">
+         AND onecategoryname like '%${onecategoryname}%'
+     </if>
+     <if test="twocategoryname!=null and twocategoryname!=''">
+         AND twocategoryname like '%${twocategoryname}%'
+     </if>
+     <if test="threecategoryname!=null and threecategoryname!=''">
+         AND threecategoryname like '%${threecategoryname}%'
+     </if>
+     ORDER BY createtime desc
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM api_name WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     <if test="onecategoryname!=null and onecategoryname!=''">
+         AND onecategoryname like '%${onecategoryname}%'
+     </if>
+     <if test="twocategoryname!=null and twocategoryname!=''">
+         AND twocategoryname like '%${twocategoryname}%'
+     </if>
+     <if test="threecategoryname!=null and threecategoryname!=''">
+         AND threecategoryname like '%${threecategoryname}%'
+     </if>
+ </select>
+ 
+ <select id="findInfo" parameterType="map" resultType="com.syntun.entity.ApiName">
+     SELECT * FROM api_name WHERE 1=1
+     <if test="websiteid!=null and websiteid!=''">
+         AND websiteid=#{websiteid}
+     </if>
+     <if test="tablename!=null and tablename!=''">
+         AND tablename=#{tablename}
+     </if>
+ </select>
+ 
+  <select id="findone"  parameterType="java.lang.Integer"  resultType="com.syntun.entity.ApiName">
+    select * from api_name where id=#{id}
+  </select>
+  
+</mapper>

@@ -1,0 +1,589 @@
+layui.use(['laydate','element','form','layer','table','laytpl'],function(){
+	var laydate = layui.laydate;
+	var element = layui.element;
+	var indexTab;
+	element.on('tab(filter)', function(data){
+		indexTab = data.index;
+		
+		if(indexTab == 0){
+			tableIns.reload();
+		}else if(indexTab == 1){
+			tableRep.reload();
+		}
+	});
+	laydate.render({
+	    elem: '.exeDate',
+	    type: 'datetime',
+	    max: +1,
+	 });
+	var form = layui.form,
+        layer = parent.layer === undefined ? layui.layer : top.layer,
+        $ = layui.jquery,
+        laytpl = layui.laytpl,
+        table = layui.table;
+	
+	getRemarkGroups();
+	getRemarkUsers();
+	/*
+	 * 用户组列表
+	 */
+    var tableIns = table.render({
+        elem: '#skyGroups',
+        url :$("#ctx").attr("value") + '/skyGroups/getList.ht',
+        cellMinWidth : 70,
+        page : true,
+        height : "full-113",
+        limits : [10,15,20,25],
+        limit : 10,
+        id : "skyGroupsTable",
+        cols : [[
+            {type: 'numbers', width:30, fixed: 'left'},
+            {type: 'checkbox', fixed: 'left'},
+            {field: 'id', title: '用户组ID', align:"center", minWidth:80},
+            {field: 'groupName', title: '用户组名', align:"center", minWidth:80},
+            {field: 'inspect', title: '价格计算顺序', align:"center", minWidth:270},
+            {title: '操作', width:120, templet:'#skyGroupsBar',fixed:"right",align:"center"}
+        ]]
+    });
+    
+    //搜索
+    $(".search_btn").on("click",function(){
+    	table.reload("skyGroupsTable",{
+           page: {
+              curr: 1 //重新从第 1 页开始
+           },
+           url: $("#ctx").attr("value") + '/skyGroups/getList.ht',
+           method: 'post',
+           where: {
+        	   groupName : $(".searchVal").val()
+           }
+       })
+        
+    });
+    
+    $(".add_btn").click(function(){
+    	$(".groupId").val("");  
+    	$(".groupName").val("");
+        $(".inspect1").val("");
+        $(".inspect2").val(""); 
+        $(".inspect3").val(""); 
+        $(".inspect4").val("");  
+        $(".inspect5").val(""); 
+        form.render('select','selFilter'); //渲染
+    	addGroups();
+    })
+    //添加
+    function addGroups(edit){
+    	$(".addPatRecord").show();
+    	$(".editPatRecord").hide();
+    	var title = "添加用户组";
+    	if(edit){
+    		title = "编辑用户组";
+    		$(".groupId").val(edit.id);  
+        	$(".groupName").val(edit.groupName);
+            $(".inspect1").val(edit.inspect.split("-->")[0]);
+            $(".inspect2").val(edit.inspect.split("-->")[1]); 
+            $(".inspect3").val(edit.inspect.split("-->")[2]); 
+            $(".inspect4").val(edit.inspect.split("-->")[3]);  
+            $(".inspect5").val(edit.inspect.split("-->")[4]);   
+            form.render('select','selFilter'); //渲染
+    		$(".addPatRecord").hide();
+    		$(".editPatRecord").show();
+        }
+    	
+    	$("#skyGroupsTab").dialog({  
+            //autoOpen : false,	//是否自动弹出窗口  
+            modal : true,		//设置为模态对话框  
+            resizable : true,	//是否可以改变dialog的大小
+            width : 720,		//弹出框宽度  
+            height : 400,		//弹出框高度  
+            title : title,		//弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+            	/*'添加':function(data){  
+            		 
+	            }, */
+	            '取消':function(){ 
+	                $(".groupId").val("");  
+	            	$(".groupName").val("");
+	                $(".inspect1").val("");
+	                $(".inspect2").val(""); 
+	                $(".inspect3").val(""); 
+	                $(".inspect4").val("");  
+	                $(".inspect5").val("");  
+	                form.render('select','selFilter'); //渲染
+	            	$(this).dialog("close");  
+	            }  
+            } 
+       });  
+    	
+    }
+   //立即添加
+    form.on("submit(addPatRecord)",function(data){
+        //弹出loading
+    	var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+        // 实际使用时的提交信息
+       $.post($("#ctx").attr("value") + '/skyGroups/addRecord.ht',{
+    	   groupName : $(".groupName").val(), 
+    	   inspect : $(".inspect1").val()+'-->'+$(".inspect2").val()+'-->'+$(".inspect3").val()
+    	   		+'-->'+$(".inspect4").val()+'-->'+$(".inspect5").val(), 
+        },function(res){
+        	tableIns.reload();
+         	top.layer.msg("添加成功！"); 
+         	$(".groupId").val("");  
+        	$(".groupName").val("");
+            $(".inspect1").val("");
+            $(".inspect2").val(""); 
+            $(".inspect3").val(""); 
+            $(".inspect4").val("");  
+            $(".inspect5").val("");  
+            form.render('select','selFilter'); //渲染
+         	$("#skyGroupsTab").dialog("close"); 
+        })
+        
+        return false;
+    })
+    //立即修改
+    form.on("submit(editPatRecord)",function(data){
+    	//弹出loading
+       var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+        // 实际使用时的提交信息
+       $.post($("#ctx").attr("value") + '/skyGroups/editRecord.ht',{
+    	   id : $(".groupId").val(), 
+    	   groupName : $(".groupName").val(), 
+    	   inspect : $(".inspect1").val()+'-->'+$(".inspect2").val()+'-->'+$(".inspect3").val()
+    	   		+'-->'+$(".inspect4").val()+'-->'+$(".inspect5").val(), 
+         },function(res){
+        	tableIns.reload();
+         	top.layer.msg("编辑成功！"); 
+         	$(".groupId").val("");  
+        	$(".groupName").val("");
+            $(".inspect1").val("");
+            $(".inspect2").val(""); 
+            $(".inspect3").val(""); 
+            $(".inspect4").val("");  
+            $(".inspect5").val("");  
+            form.render('select','selFilter'); //渲染
+         	$("#skyGroupsTab").dialog("close"); 
+        })
+        
+        return false;
+    })
+	//批量删除
+    $(".delAll_btn").click(function(){
+        var checkStatus = table.checkStatus('skyGroupsTable'),
+            data = checkStatus.data,
+            ids = [];
+        if(data.length > 0) {
+            for (var i in data) {
+            	ids.push(data[i].id);
+            }
+            layer.confirm('将删除此用户组下的所有用户，确定删除选中的记录？', {icon: 3, title: '提示信息'}, function (index) {
+                $.get($("#ctx").attr("value") + "/skyGroups/delAllRecord.ht",{
+                    ids : ids.toString()  //将需要删除的newsId作为参数传入
+                },function(data){
+                	top.layer.msg("批量删除成功！");
+                	tableIns.reload();
+                	layer.close(index);
+                })
+            })
+        }else{
+            layer.msg("请选择需要删除的记录");
+        }
+    })
+
+    //列表操作
+    table.on('tool(skyGroups)', function(obj){
+        var layEvent = obj.event,
+            data = obj.data;
+
+        if(layEvent === 'edit'){ //编辑
+        	addGroups(data);
+        }else if(layEvent === 'del'){ //删除
+            layer.confirm('将删除此用户组下的所有用户，确定删除此记录？',{icon:3, title:'提示信息'},function(index){
+            	$.get($("#ctx").attr("value") + "/skyGroups/delRecord.ht",{
+                	id : data.id
+                },function(data){
+                	top.layer.msg("删除成功！");
+                	tableIns.reload();
+                    layer.close(index);
+                })
+            });
+        }
+    });
+    
+    /*
+	 * 用户列表
+	 */
+    var tableRep = table.render({
+        elem: '#skyUsers',
+        url :$("#ctx").attr("value") + '/skyUsers/getList.ht',
+        cellMinWidth : 70,
+        page : true,
+        height : "full-113",
+        limits : [10,15,20,25],
+        limit : 10,
+        id : "skyUsersTable",
+        cols : [[
+            {type: 'numbers', width:30, fixed: 'left'},
+            {type: 'checkbox', fixed: 'left'},
+            {field: 'userId', title: '用户ID', align:"center", minWidth:80},
+            {field: 'userName', title: '用户名', align:"center", minWidth:150},
+            {field: 'groupId', title: '用户组ID', align:"center", minWidth:80},
+            {field: 'groupName', title: '用户组名', align:"center", minWidth:150},
+            {title: '操作', width:180, templet:'#skyUsersBar',fixed:"right",align:"center"}
+        ]]
+    });
+    
+    //搜索
+    $(".search_btn_rep").on("click",function(){
+    	table.reload("skyUsersTable",{
+           page: {
+              curr: 1 //重新从第 1 页开始
+           },
+           url: $("#ctx").attr("value") + '/skyUsers/getList.ht',
+           method: 'post',
+           where: {
+        	   userName : $(".searchValRep").val()
+           }
+       })
+        
+    });
+    
+    $(".add_btn_rep").click(function(){
+    	$(".userIdU").val("");  
+	    $(".userId").val("");
+	    $(".userName").val("");
+	    $(".groupIdU").val("");
+	    $(".groupNameU").val("");
+	    addUsers();
+    })
+    //添加
+    function addUsers(edit){
+    	$(".addRepRecord").show();
+    	$(".editRepRecord").hide();
+    	var title = "添加用户";
+    	if(edit){
+    		title = "编辑用户";
+            $(".userIdU").val(edit.id);  
+    	    $(".userId").val(edit.userId);
+    	    $(".userName").val(edit.userName);
+    	    $(".groupIdU").val(edit.groupId);
+    	    $(".groupNameU").val(edit.groupName);
+    		$(".addRepRecord").hide();
+    		$(".editRepRecord").show();
+        }
+    	
+    	$("#skyUsersTab").dialog({  
+            //autoOpen : false,	//是否自动弹出窗口  
+            modal : true,		//设置为模态对话框  
+            resizable : true,	//是否可以改变dialog的大小
+            width : 720,		//弹出框宽度  
+            height : 400,		//弹出框高度  
+            title : title,		//弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+            	/*'添加':function(data){  
+            		 
+	            }, */
+	            '取消':function(){ 
+	            	$(".userIdU").val("");  
+	        	    $(".userId").val("");
+	        	    $(".userName").val("");
+	        	    $(".groupIdU").val("");
+	        	    $(".groupNameU").val("");
+	            	$(this).dialog("close");  
+	            }  
+            } 
+       }); 
+    }
+    
+    form.on("submit(addRepRecord)",function(data){
+        //弹出loading
+        var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+        // 实际使用时的提交信息
+       $.post($("#ctx").attr("value") + '/skyUsers/addRecord.ht',{
+    	   userId : $(".userId").val(),
+    	   userName : $(".userName").val(),
+    	   groupId : $(".groupIdU").val(),
+    	   groupName : $(".groupNameU").val(),
+        },function(res){
+        	tableRep.reload();
+         	top.layer.msg("添加成功！"); 
+         	$(".userIdU").val("");  
+    	    $(".userId").val("");
+    	    $(".userName").val("");
+    	    $(".groupIdU").val("");
+    	    $(".groupNameU").val("");
+         	$("#skyUsersTab").dialog("close"); 
+        })
+        
+        return false;
+    })
+    form.on("submit(editRepRecord)",function(data){
+        //弹出loading
+        var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+        // 实际使用时的提交信息
+       $.post($("#ctx").attr("value") + '/skyUsers/editRecord.ht',{
+    	   id : $(".userIdU").val(),
+    	   userId : $(".userId").val(),  
+    	   userName : $(".userName").val(), 
+    	   groupId : $(".groupIdU").val(), 
+    	   groupName : $(".groupNameU").val(), 
+        },function(res){
+        	tableRep.reload();
+         	top.layer.msg("修改成功！"); 
+        	$(".userIdU").val("");  
+    	    $(".userId").val("");
+    	    $(".userName").val("");
+    	    $(".groupIdU").val("");
+    	    $(".groupNameU").val("");
+         	$("#skyUsersTab").dialog("close"); 
+        })
+        
+        return false;
+    })
+	//批量删除
+    $(".delAll_btn_rep").click(function(){
+        var checkStatus = table.checkStatus('skyUsersTable'),
+            data = checkStatus.data,
+            ids = [];
+        if(data.length > 0) {
+            for (var i in data) {
+            	ids.push(data[i].id);
+            }
+            layer.confirm('确定删除选中的记录？', {icon: 3, title: '提示信息'}, function (index) {
+                $.get($("#ctx").attr("value") + "/skyUsers/delAllRecord.ht",{
+                    ids : ids.toString()  //将需要删除的newsId作为参数传入
+                },function(data){
+                	top.layer.msg("批量删除成功！");
+                	tableRep.reload();
+                	layer.close(index);
+                })
+            })
+        }else{
+            layer.msg("请选择需要删除的记录");
+        }
+    })
+
+    //列表操作
+    table.on('tool(skyUsers)', function(obj){
+        var layEvent = obj.event,
+            data = obj.data;
+
+        if(layEvent === 'edit'){ //编辑
+        	addUsers(data);
+        }else if(layEvent === 'del'){ //删除
+            layer.confirm('确定删除此记录？',{icon:3, title:'提示信息'},function(index){
+            	$.get($("#ctx").attr("value") + "/skyUsers/delRecord.ht",{
+                	id : data.id
+                },function(data){
+                	top.layer.msg("删除成功！");
+                	tableRep.reload();
+                    layer.close(index);
+                })
+            });
+        }else if(layEvent === 'exe'){ //删除
+        	exeUsers(data);
+        }
+    });
+    
+    $(".exe_btn").click(function(){
+    	exeUsers();
+    })
+	//添加
+    function exeUsers(data){
+    	var title = "执行数据";
+    	$(".exeAllRecord").show();
+    	$(".exeRecord").hide();
+    	if(data){
+    	    $(".userId").val(data.userId);
+    	    $(".userName").val(data.userName);
+    	    $(".groupIdU").val(data.groupId);
+    	    $(".groupNameU").val(data.groupName);
+    	    $(".exeRecord").show();
+        	$(".exeAllRecord").hide();
+        }
+    	$("#exeTab").dialog({  
+            //autoOpen : false,	//是否自动弹出窗口  
+            modal : true,		//设置为模态对话框  
+            resizable : true,	//是否可以改变dialog的大小
+            width : 400,		//弹出框宽度  
+            height : 222,		//弹出框高度  
+            title : title,		//弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+            	/*'添加':function(data){  
+            		 
+	            }, */
+	            '取消':function(){ 
+	        	    $(".exeDate").val("");
+	            	$(this).dialog("close");  
+	            }  
+            } 
+       }); 
+    }
+    form.on("submit(exeRecord)",function(data){
+    	var exeDate = $(".exeDate").val();
+    	if(exeDate == ""){
+    		layer.msg("请选择执行数据的时间");
+    		return false;
+    	}
+    	var min = exeDate.split(" ")[1].split(":")[1];
+    	
+    	if(min != '00' && min != '30'){
+    		layer.msg("执行时间分钟，只能选择'00'或'30'，请重新选择时间");
+    		return false;
+    	}
+    	
+    	//弹出loading
+        var index = top.layer.msg('程序执行中，请稍候',{icon: 16,time:false,shade:0.8});
+        // 实际使用时的提交信息
+       $.post($("#ctx").attr("value") + '/skyUsers/exeRecord.ht',{
+    	   exeDate : $(".exeDate").val(),
+    	   userId : $(".userId").val(),
+    	   userName : $(".userName").val(),
+    	   groupId : $(".groupIdU").val(),
+    	   groupName : $(".groupNameU").val(),
+    	   email : email,
+        },function(res){
+        	//tableRep.reload();
+         	top.layer.msg("正在执行！请留意邮件反馈！"); 
+         	$(".exeDate").val("");
+    	    $(".userId").val("");
+    	    $(".userName").val("");
+    	    $(".groupIdU").val("");
+    	    $(".groupNameU").val("");
+         	$("#exeTab").dialog("close"); 
+        })
+        
+        return false;
+    })
+    form.on("submit(exeAllRecord)",function(data){
+    	var exeDate = $(".exeDate").val();
+    	if(exeDate == ""){
+    		layer.msg("请选择执行数据的时间");
+    		return false;
+    	}
+    	var min = exeDate.split(" ")[1].split(":")[1];
+    	
+    	if(min != '00' && min != '30'){
+    		layer.msg("执行时间分钟只能选择'00'或'30'，请重新选择时间");
+    		return false;
+    	}
+    	
+    	//弹出loading
+        var index = top.layer.msg('程序执行中，请稍候',{icon: 16,time:false,shade:0.8});
+        // 实际使用时的提交信息
+       $.post($("#ctx").attr("value") + '/skyUsers/exeAllRecord.ht',{
+    	   exeDate : $(".exeDate").val(),
+    	   email : email,
+        },function(res){
+        	//tableRep.reload();
+         	top.layer.msg("正在执行！请留意邮件反馈！"); 
+         	$(".exeDate").val("");
+         	$("#exeTab").dialog("close"); 
+        })
+        
+        return false;
+    })
+    
+    $(".selectGroup").click(function(){
+    	var tablePro = table.render({
+            elem: '#groupsList',
+            url :$("#ctx").attr("value") + '/skyGroups/getList.ht',
+            cellMinWidth : 70,
+            page : true,
+            //height : "full-200",
+            limits : [10,15,20,25],
+            limit : 10,
+            id : "groupsListTable",
+            cols : [[
+                {type: 'numbers', width:30, fixed: 'left'},
+                {field: 'id', title: '用户组ID', align:"center", width:100},
+                {field: 'groupName', title: '用户组名', align:"center", width:100},
+                {field: 'inspect', title: '促销名称', align:"center", width:250},
+                {title: '操作', width:80, templet:'#groupsListBar',fixed:"right",align:"center"}
+            ]]
+        });
+    	
+    	$("#groups").dialog({  
+            //autoOpen : false,   // 是否自动弹出窗口  
+            modal : true,    // 设置为模态对话框  
+            resizable : true,  
+            width : 630,   //弹出框宽度  
+            height : 410,   //弹出框高度  
+            title : "用户组选择",  //弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+	           /* '确定':function(){  
+	            //调用登录的方法  
+	            }, */ 
+	            '取消':function(){  
+	            	$('.groupIdU').val("");
+	            	$('.groupNameU').val("");
+	            	$(this).dialog("close");  
+	            }  
+            }  
+       });  
+    })
+    
+    //选择操作
+    table.on('tool(groupsList)', function(obj){
+    	var layEvent = obj.event,
+        data = obj.data;
+    	$('.groupIdU').val(data.id);
+    	$('.groupNameU').val(data.groupName);
+        
+    	$("#groups").dialog("close"); 
+    });
+   
+    function getRemarkGroups(){
+      	$.ajax({
+      		//url: '../../../json/remark.json',
+      		  url: $("#ctx").attr("value") + '/editRemark/getAllList.ht',
+      		  type: 'post',
+      		  data: {"remarkId" : "groups"},
+      		  dataType: 'json',
+      		  timeout: 2000,
+      		  success: function (data, status) {
+      		    var remarks = '<li>用户组维护  - 说明</li>';
+      		    for(var i=0; i<data.length; i++){
+      		    	var j = i+1;
+      		    	remarks = remarks + '<li>' + j + '、' + data[i].remark + '</li>';
+      		    }
+      		    $('.uullgroups').html(remarks);
+      		  },
+      		  fail: function (err, status) {
+      			  alert(status);
+      		  }
+      	})
+      }
+    function getRemarkUsers(){
+      	$.ajax({
+      		//url: '../../../json/remark.json',
+      		  url: $("#ctx").attr("value") + '/editRemark/getAllList.ht',
+      		  type: 'post',
+      		  data: {"remarkId" : "users"},
+      		  dataType: 'json',
+      		  timeout: 2000,
+      		  success: function (data, status) {
+      		    var remarks = '<li>用户维护  - 说明</li>';
+      		    for(var i=0; i<data.length; i++){
+      		    	var j = i+1;
+      		    	remarks = remarks + '<li>' + j + '、' + data[i].remark + '</li>';
+      		    }
+      		    $('.uullusers').html(remarks);
+      		  },
+      		  fail: function (err, status) {
+      			  alert(status);
+      		  }
+      	})
+      }
+    
+
+})

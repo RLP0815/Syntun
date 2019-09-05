@@ -1,0 +1,550 @@
+package com.syntun.report;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.syntun.entity.CateGory;
+
+/**
+ * Created by wangdong on 2019/3/12.
+ */
+public class KeleReprot {
+	
+	private final static Logger LOGGER = LoggerFactory.getLogger(KeleReprot.class);
+
+    private static String DRIVER = "com.microsoft.jdbc.sqlserver.SQLServerDriver";
+    private static String URL = "jdbc:sqlserver://192.168.0.16:1433;DatabaseName=skyscope";
+    private static String USERNAME = "liang";
+    private static String PASSWORD = "liangjianqing";
+    private static final String SQL = "SELECT * FROM ";// 数据库操作
+    
+/*    public DatabaseUtil(String DRIVER,String URL,String USERNAME,String PASSWORD){
+        this.DRIVER = DRIVER;
+        this.URL = URL;
+        this.USERNAME = USERNAME;
+        this.PASSWORD = PASSWORD;
+    }*/
+
+/*    static {
+        try {
+            Class.forName(DRIVER);
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("can not load jdbc driver", e);
+        }
+    }*/
+
+    /**
+     * 获取数据库连接
+     *
+     * @return
+     */
+    public static Connection getConnection() {
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+        } catch (SQLException e) {
+            LOGGER.error("get connection failure", e);
+        }
+        return conn;
+    }
+
+    /**
+     * 关闭数据库连接
+     * @param conn
+     */
+    public static void closeConnection(Connection conn) {
+        if(conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                LOGGER.error("close connection failure", e);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+    	getKeleList("2019-06-01");//生成excel
+    }
+    
+    public static void getKeleList(String date,HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	
+    	List<CateGory> skuInfo = getSkuInfo(date);//第一个sheet页面数据
+    	
+    	//京东
+    	List<CateGory> jdlist = new ArrayList<CateGory>(); 
+    	List<CateGory> jdzs = getfenzi(date,"碳酸饮料","jd");
+    	jdlist.addAll(jdzs);
+    	List<CateGory> jdgw = getfenzi(date,"果味饮料","jd");
+    	jdlist.addAll(jdgw);
+    	List<CateGory> jdbz = getfenzi(date,"包装饮用水","jd");
+    	jdlist.addAll(jdbz);
+    	List<CateGory> jdchunYuemfz = getchunYuem(date,"jd");//纯悦分子
+    	jdlist.addAll(jdchunYuemfz);
+    	
+        Map wxinfo = getwxinfo(date,"jd");//jd分母
+        double bao = (double) wxinfo.get("bao");
+        double guo = (double) wxinfo.get("guo");
+        double suan = (double) wxinfo.get("suan");
+        
+        List<CateGory> jdchunYueMufm = getchunYueMu("jd");//纯悦分母
+        String wsum3 = jdchunYueMufm.get(0).getWsum();
+        double w5 = Double.parseDouble(wsum3);
+        
+        if(jdlist.size()>0){
+        	for(CateGory c:jdlist){
+        	    if(c.getBrand().equals("纯悦")){
+            		double wsum = Double.parseDouble(c.getWsum())/w5;
+            		c.setWsums(wsum+"");
+        		}else{
+            		if(c.getCategory().equals("包装饮用水")){
+                		double wsum = Double.parseDouble(c.getWsum())/bao;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("果味饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/guo;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("碳酸饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/suan;
+                		c.setWsums(wsum+"");
+            		}
+        		}
+        	}
+        }
+        
+        //天猫
+    	List<CateGory> tmlist = new ArrayList<CateGory>(); 
+    	List<CateGory> tmzs = getfenzi(date,"碳酸饮料","tm");
+    	tmlist.addAll(tmzs);
+    	List<CateGory> tmgw = getfenzi(date,"果味饮料","tm");
+    	tmlist.addAll(tmgw);
+    	List<CateGory> tmbz = getfenzi(date,"包装饮用水","tm");
+    	tmlist.addAll(tmbz);
+    	List<CateGory> tmchunYuemfz = getchunYuem(date,"tm");//纯悦分子
+    	tmlist.addAll(tmchunYuemfz);
+    	
+        Map wxinfotm = getwxinfo(date,"tm");//jd分母
+        double tmbao = (double) wxinfotm.get("bao");
+        double tmguo = (double) wxinfotm.get("guo");
+        double tmsuan = (double) wxinfotm.get("suan");
+        
+        List<CateGory> tmchunYueMufm = getchunYueMu("tm");//纯悦分母
+        String wsumtm = tmchunYueMufm.get(0).getWsum();
+        double tm = Double.parseDouble(wsumtm);
+        
+        if(tmlist.size()>0){
+        	for(CateGory c:tmlist){
+        	    if(c.getBrand().equals("纯悦")){
+            		double wsum = Double.parseDouble(c.getWsum())/tm;
+            		c.setWsums(wsum+"");
+        		}else{
+            		if(c.getCategory().equals("包装饮用水")){
+                		double wsum = Double.parseDouble(c.getWsum())/tmbao;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("果味饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tmguo;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("碳酸饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tmsuan;
+                		c.setWsums(wsum+"");
+            		}
+        		}
+        	}
+        }
+        
+        
+        //京东和天猫
+    	List<CateGory> tm_jdlist = new ArrayList<CateGory>(); 
+    	List<CateGory> tm_jdzs = getfenzi(date,"碳酸饮料","");
+    	tm_jdlist.addAll(tm_jdzs);
+    	List<CateGory> tm_jdgw = getfenzi(date,"果味饮料","");
+    	tm_jdlist.addAll(tm_jdgw);
+    	List<CateGory> tm_jdbz = getfenzi(date,"包装饮用水","");
+    	tm_jdlist.addAll(tm_jdbz);
+    	List<CateGory> tm_jdchunYuemfz = getchunYuem(date,"");//纯悦分子
+    	tm_jdlist.addAll(tm_jdchunYuemfz);
+    	
+        Map wxinfotm_jd = getwxinfo(date,"");//jd分母
+        double tm_jdbao = (double) wxinfotm_jd.get("bao");
+        double tm_jdguo = (double) wxinfotm_jd.get("guo");
+        double tm_jdsuan = (double) wxinfotm_jd.get("suan");
+        
+        List<CateGory> tm_jdchunYueMufm = getchunYueMu("");//纯悦分母
+        String wsumtm_jd = tm_jdchunYueMufm.get(0).getWsum();
+        double tm_jd = Double.parseDouble(wsumtm_jd);
+        
+        if(tm_jdlist.size()>0){
+        	for(CateGory c:tm_jdlist){
+        	    if(c.getBrand().equals("纯悦")){
+            		double wsum = Double.parseDouble(c.getWsum())/tm_jd;
+            		c.setWsums(wsum+"");
+        		}else{
+            		if(c.getCategory().equals("包装饮用水")){
+                		double wsum = Double.parseDouble(c.getWsum())/tm_jdbao;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("果味饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tm_jdguo;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("碳酸饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tm_jdsuan;
+                		c.setWsums(wsum+"");
+            		}
+        		}
+        	}
+        }
+        ExcelUtil.exportUserExcel(jdlist, tmlist, tm_jdlist, skuInfo,request,response,date);
+        System.out.println("完成");
+    	
+    }
+    
+    public static void getKeleList(String date) throws Exception {
+    	
+    	List<CateGory> skuInfo = getSkuInfo(date);//第一个sheet页面数据
+    	
+    	//京东
+    	List<CateGory> jdlist = new ArrayList<CateGory>(); 
+    	List<CateGory> jdzs = getfenzi(date,"碳酸饮料","jd");
+    	jdlist.addAll(jdzs);
+    	List<CateGory> jdgw = getfenzi(date,"果味饮料","jd");
+    	jdlist.addAll(jdgw);
+    	List<CateGory> jdbz = getfenzi(date,"包装饮用水","jd");
+    	jdlist.addAll(jdbz);
+    	List<CateGory> jdchunYuemfz = getchunYuem(date,"jd");//纯悦分子
+    	jdlist.addAll(jdchunYuemfz);
+    	
+        Map wxinfo = getwxinfo(date,"jd");//jd分母
+        double bao = (double) wxinfo.get("bao");
+        double guo = (double) wxinfo.get("guo");
+        double suan = (double) wxinfo.get("suan");
+        
+        List<CateGory> jdchunYueMufm = getchunYueMu("jd");//纯悦分母
+        String wsum3 = jdchunYueMufm.get(0).getWsum();
+        double w5 = Double.parseDouble(wsum3);
+        
+        if(jdlist.size()>0){
+        	for(CateGory c:jdlist){
+        	    if(c.getBrand().equals("纯悦")){
+            		double wsum = Double.parseDouble(c.getWsum())/w5;
+            		c.setWsums(wsum+"");
+        		}else{
+            		if(c.getCategory().equals("包装饮用水")){
+                		double wsum = Double.parseDouble(c.getWsum())/bao;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("果味饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/guo;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("碳酸饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/suan;
+                		c.setWsums(wsum+"");
+            		}
+        		}
+        	}
+        }
+        
+        //天猫
+    	List<CateGory> tmlist = new ArrayList<CateGory>(); 
+    	List<CateGory> tmzs = getfenzi(date,"碳酸饮料","tm");
+    	tmlist.addAll(tmzs);
+    	List<CateGory> tmgw = getfenzi(date,"果味饮料","tm");
+    	tmlist.addAll(tmgw);
+    	List<CateGory> tmbz = getfenzi(date,"包装饮用水","tm");
+    	tmlist.addAll(tmbz);
+    	List<CateGory> tmchunYuemfz = getchunYuem(date,"tm");//纯悦分子
+    	tmlist.addAll(tmchunYuemfz);
+    	
+        Map wxinfotm = getwxinfo(date,"tm");//jd分母
+        double tmbao = (double) wxinfotm.get("bao");
+        double tmguo = (double) wxinfotm.get("guo");
+        double tmsuan = (double) wxinfotm.get("suan");
+        
+        List<CateGory> tmchunYueMufm = getchunYueMu("tm");//纯悦分母
+        String wsumtm = tmchunYueMufm.get(0).getWsum();
+        double tm = Double.parseDouble(wsumtm);
+        
+        if(tmlist.size()>0){
+        	for(CateGory c:tmlist){
+        	    if(c.getBrand().equals("纯悦")){
+            		double wsum = Double.parseDouble(c.getWsum())/tm;
+            		c.setWsums(wsum+"");
+        		}else{
+            		if(c.getCategory().equals("包装饮用水")){
+                		double wsum = Double.parseDouble(c.getWsum())/tmbao;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("果味饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tmguo;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("碳酸饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tmsuan;
+                		c.setWsums(wsum+"");
+            		}
+        		}
+        	}
+        }
+        
+        
+        //京东和天猫
+    	List<CateGory> tm_jdlist = new ArrayList<CateGory>(); 
+    	List<CateGory> tm_jdzs = getfenzi(date,"碳酸饮料","");
+    	tm_jdlist.addAll(tm_jdzs);
+    	List<CateGory> tm_jdgw = getfenzi(date,"果味饮料","");
+    	tm_jdlist.addAll(tm_jdgw);
+    	List<CateGory> tm_jdbz = getfenzi(date,"包装饮用水","");
+    	tm_jdlist.addAll(tm_jdbz);
+    	List<CateGory> tm_jdchunYuemfz = getchunYuem(date,"");//纯悦分子
+    	tm_jdlist.addAll(tm_jdchunYuemfz);
+    	
+        Map wxinfotm_jd = getwxinfo(date,"");//jd分母
+        double tm_jdbao = (double) wxinfotm_jd.get("bao");
+        double tm_jdguo = (double) wxinfotm_jd.get("guo");
+        double tm_jdsuan = (double) wxinfotm_jd.get("suan");
+        
+        List<CateGory> tm_jdchunYueMufm = getchunYueMu("");//纯悦分母
+        String wsumtm_jd = tm_jdchunYueMufm.get(0).getWsum();
+        double tm_jd = Double.parseDouble(wsumtm_jd);
+        
+        if(tm_jdlist.size()>0){
+        	for(CateGory c:tm_jdlist){
+        	    if(c.getBrand().equals("纯悦")){
+            		double wsum = Double.parseDouble(c.getWsum())/tm_jd;
+            		c.setWsums(wsum+"");
+        		}else{
+            		if(c.getCategory().equals("包装饮用水")){
+                		double wsum = Double.parseDouble(c.getWsum())/tm_jdbao;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("果味饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tm_jdguo;
+                		c.setWsums(wsum+"");
+            		}else if(c.getCategory().equals("碳酸饮料")){
+                		double wsum = Double.parseDouble(c.getWsum())/tm_jdsuan;
+                		c.setWsums(wsum+"");
+            		}
+        		}
+        	}
+        }
+        ExcelUtil.exportUserExcel(jdlist, tmlist, tm_jdlist, skuInfo);
+        System.out.println("完成");
+    	
+    }
+    /**
+     * ChunYue 分母
+     * @return
+     */
+    public static List<CateGory> getchunYueMu(String ecType) {
+    	List<CateGory> list=new ArrayList<CateGory>(); 
+        //与数据库的连接
+        Connection conn = getConnection();
+        String sql ="select sum(SALES_PRICE)*1000 SALES_PRICE from cloa_chushu";
+        //jd或天猫 分类
+        if(StringUtils.isNotBlank(ecType)){
+        	sql = "select sum(SALES_PRICE)*1000 SALES_PRICE from cloa_chushu where ec='"+ecType+"'";
+        }
+        try {  
+            PreparedStatement pst = conn.prepareStatement(sql);
+            ResultSet rs=pst.executeQuery();      
+            while(rs.next()){  
+            	CateGory c =new CateGory();  
+                c.setWsum(rs.getString("SALES_PRICE"));
+                list.add(c);  
+            }  
+           } catch (Exception e) {  
+            e.printStackTrace();  
+        }finally {
+        	closeConnection(conn);
+		}
+        return list;
+    }
+    /**
+     * ChunYue分子
+     * @return
+     */
+    public static List<CateGory> getchunYuem(String date,String ecType) {
+    	List<CateGory> list=new ArrayList<CateGory>(); 
+        //与数据库的连接
+        Connection conn = getConnection();
+        String sql ="select sum(SALES_PRICE)*1000 SALES_PRICE from cloa_chushu where En_brand = 'Chun Yue' and date='"+date+"'";
+        //jd或天猫 分类
+        if(StringUtils.isNotBlank(ecType)){
+        	sql = "select sum(SALES_PRICE)*1000 SALES_PRICE from cloa_chushu where En_brand = 'Chun Yue' and ec='"+ecType+"' and date='"+date+"'";
+        }
+        try {  
+            PreparedStatement pst = conn.prepareStatement(sql);
+            ResultSet rs=pst.executeQuery();      
+            while(rs.next()){  
+            	CateGory c =new CateGory();  
+            	c.setBrand("纯悦");
+            	c.setCategory("纯悦");
+            	if(StringUtils.isNotBlank(rs.getString("SALES_PRICE"))){
+            		c.setWsum(rs.getString("SALES_PRICE"));
+            	}else{
+            		c.setWsum("0");
+            	}
+                list.add(c);  
+            }  
+           } catch (Exception e) {  
+            e.printStackTrace();  
+        }finally {
+        	closeConnection(conn);
+		}
+        return list;
+    }
+    //分子
+    public static List<CateGory> getfenzi(String date,String cateGory,String ec){
+        //与数据库的连接
+        Connection conn = getConnection();
+        List<CateGory> list=new ArrayList<CateGory>(); 
+        String sqlsuan = "select top 10 CATEGORY, sub_brand,sum(SALES_PRICE)*1000 SALES_PRICE  from cloa_chushu where date='"+date+"' and CATEGORY='"+cateGory+"' GROUP BY CATEGORY, sub_brand ORDER BY CATEGORY,SALES_PRICE DESC";
+        if(StringUtils.isNotBlank(ec)){
+        	sqlsuan = "select top 10 CATEGORY, sub_brand,sum(SALES_PRICE)*1000 SALES_PRICE  from cloa_chushu where date='"+date+"' and ec='"+ec+"' and CATEGORY='"+cateGory+"' GROUP BY CATEGORY, sub_brand ORDER BY CATEGORY,SALES_PRICE DESC";
+        }
+        try {  
+            PreparedStatement pst=conn.prepareStatement(sqlsuan);  
+            ResultSet rs=pst.executeQuery();      
+            while(rs.next()){  
+            	CateGory c =new CateGory();  
+                c.setCategory(rs.getString("CATEGORY"));
+                c.setBrand(rs.getString("sub_brand"));
+                c.setWsum(rs.getString("SALES_PRICE"));
+                list.add(c);  
+            }  
+           } catch (Exception e) {  
+            e.printStackTrace();  
+        }finally {
+        	closeConnection(conn);
+		}
+        return list;
+    }
+    /**
+     * 第二个sheet页分母
+     * @return
+     */
+    public static Map getwxinfo(String date,String ecType) {
+    	List<CateGory> list=new ArrayList<CateGory>(); 
+        //与数据库的连接
+        Connection conn = getConnection();
+        String sql = "select CATEGORY, sum(SALES_PRICE)*1000 SALES_PRICE from cloa_chushu where date='"+date+"' GROUP BY  CATEGORY";
+        if(StringUtils.isNotBlank(ecType)){
+        	sql = "select CATEGORY, sum(SALES_PRICE)*1000 SALES_PRICE from cloa_chushu where date='"+date+"' and ec='"+ecType+"' GROUP BY  CATEGORY";
+        }
+        try {  
+            PreparedStatement pst=conn.prepareStatement(sql);  
+            ResultSet rs=pst.executeQuery();      
+            while(rs.next()){  
+            	CateGory c =new CateGory();  
+                c.setCategory(rs.getString("CATEGORY"));
+                c.setWsum(rs.getString("SALES_PRICE"));
+                list.add(c);  
+            }  
+           } catch (Exception e) {  
+            e.printStackTrace();  
+        }finally {
+        	closeConnection(conn);
+		}
+        double bao = 0;
+        double guo = 0;
+        double suan = 0;
+        if(list.size()>0){
+        	for(CateGory c:list){
+        		if(StringUtils.isNotBlank(c.getCategory())){
+            		if(c.getCategory().equals("包装饮用水")){
+            			bao += Double.parseDouble(c.getWsum());
+            		}else if(c.getCategory().equals("果味饮料")){
+            			guo += Double.parseDouble(c.getWsum());
+            		}else if(c.getCategory().equals("碳酸饮料")){
+            			suan += Double.parseDouble(c.getWsum());
+            		}
+        		}
+        	}
+        }
+        Map<String,Double> m = new HashMap();
+        //System.out.println(bao+","+guo+","+suan);
+        m.put("bao", bao);
+        m.put("guo", guo);
+        m.put("suan", suan);
+        return m;
+    }
+    //第一个sheet页面赋值功能
+    public static List<CateGory> getSkuInfo(String date) throws Exception{
+  
+    	//获取中英文对照表信息
+    	List<CateGory> skuList = getSkudzb();
+    	if(skuList.size()>0){
+    		for(CateGory c:skuList){
+    			//获取中文类型
+    			String brand = c.getBrand();
+    			//周
+    			c.setWsum(getSkuwm("jd",brand,date));
+    			c.setWsums(getSkuwm("tm",brand,date));
+    		}
+    	}else{
+    		System.out.println("对照表没数据");
+    	}
+    	return skuList;
+    }
+    /**
+     * sku 中英文对照表。
+     */
+    public static List<CateGory> getSkudzb() {
+    	List<CateGory> list=new ArrayList<CateGory>(); 
+        //与数据库的连接
+        Connection conn = getConnection();
+        String sql = "select * from Cola_Sku_En_Ch";
+        try {  
+            PreparedStatement pst = conn.prepareStatement(sql);
+            ResultSet rs=pst.executeQuery();      
+            while(rs.next()){  
+            	CateGory c =new CateGory();  
+                c.setCategory(rs.getString("中文sku"));
+                c.setBrand(rs.getString("英文sku"));
+                list.add(c);  
+            }  
+           } catch (Exception e) {  
+            e.printStackTrace();  
+        }finally {
+        	closeConnection(conn);
+		}
+        return list;
+    }
+    /**
+     * sku 周和月 天猫和京东数据
+     */
+    public static String getSkuwm(String ecType,String sku,String date) {
+    	List<CateGory> list=new ArrayList<CateGory>(); 
+        //与数据库的连接
+        Connection conn = getConnection();
+        String sql = "select sum(sales)*1000 sales from COLA_SKU_SALES_chushu where ec='"+ecType+"' and sku='"+sku+"' and date='"+date+"'";
+        try {  
+            PreparedStatement pst = conn.prepareStatement(sql);
+            ResultSet rs=pst.executeQuery();      
+            while(rs.next()){  
+            	CateGory c =new CateGory();  
+                c.setWsum(rs.getString("sales"));
+                list.add(c);  
+            }  
+           } catch (Exception e) {  
+            e.printStackTrace();  
+        }finally {
+        	closeConnection(conn);
+		}
+		String wsum = list.get(0).getWsum();
+		if(StringUtils.isBlank(wsum)){
+			wsum="0";
+		}
+        return wsum;
+    }
+}

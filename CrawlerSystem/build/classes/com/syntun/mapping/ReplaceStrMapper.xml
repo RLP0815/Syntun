@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ReplaceStrDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="ReplaceStr" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="replaceGroup" column="replace_group" jdbcType="INTEGER" />
+    <result property="replaceStr" column="replace_str" jdbcType="VARCHAR" />
+    <result property="replaceVal" column="replace_val" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectReplaceStr" resultType="ReplaceStr">
+    select * FROM replace_str
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM replace_str ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM replace_str
+    <if test="replaceStr != null" > where replace_str like CONCAT('%',#{replaceStr},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from replace_str where replace_str like CONCAT('%',#{replaceStr},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from replace_str where 1=1 
+     <if test="replaceStr != null" > and replace_str like CONCAT('%',#{replaceStr},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into replace_str (replace_group, replace_str, replace_val)
+    values (#{replaceGroup}, #{replaceStr}, #{replaceVal})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update replace_str set
+  		replace_group = #{replaceGroup},
+  		replace_str = #{replaceStr},
+  		replace_val = #{replaceVal} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from replace_str where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from replace_str where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ServerDao" >
+  
+  <delete id="delete" parameterType="java.lang.String" >
+    delete from server where id = #{id}
+  </delete>
+  
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true" parameterType="com.syntun.entity.Server" >
+    insert into server (ip,startpath,stoppath,statepath,classify,logpath,warningstate,logstate)
+    values (#{ip},#{startpath},#{stoppath},#{statepath},#{classify},#{logpath},#{warningstate},#{logstate})
+  </insert>
+  
+  <update id="update" parameterType="com.syntun.entity.Server" >
+    UPDATE server
+    <trim prefix="set" suffixOverrides=",">
+        <if test="ip != null and ip!=''">
+            ip = #{ip},
+        </if>
+        <if test="name != null and name!=''">
+            name = #{name},
+        </if>
+        <if test="password != null and password!=''">
+            password = #{password},
+        </if>
+        <if test="isdel != null and isdel!=''">
+            isdel = #{isdel},
+        </if>
+        <if test="classify != null and classify!=''">
+            classify = #{classify},
+        </if>
+        <if test="state != null and state !=''">
+            state = #{state},
+        </if>
+        <if test="warningstate != null and warningstate !=''">
+            warningstate = #{warningstate},
+        </if>
+        <if test="logstate != null and logstate !=''">
+            logstate = #{logstate},
+        </if>
+    </trim>
+    WHERE id = #{id}
+	</update>
+
+    <select id="findAll" parameterType="map" resultType="com.syntun.entity.Server">
+        SELECT * FROM server where isdel='0' 
+	     <if test="classify!=null and classify!=''">
+	         AND classify = #{classify}
+	     </if>
+        ORDER BY ip
+    </select>
+    
+    <select id="findAllDel" parameterType="map" resultType="com.syntun.entity.Server">
+        SELECT * FROM server where isdel='1' ORDER BY ip
+    </select>
+    
+    <select id="findone" parameterType="int" resultType="com.syntun.entity.Server">
+        SELECT * FROM server where id=#{id}
+    </select>
+  
+</mapper>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD SQL Map Config 3.0//EN"
+                "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+        <typeAlias type="com.syntun.entity.TAdmin" alias="TAdmin" />
+        <typeAlias type="com.syntun.entity.EditRemark" alias="EditRemark" />
+        <typeAlias type="com.syntun.entity.Permission" alias="Permission" />
+        <typeAlias type="com.syntun.entity.DataTable" alias="DataTable" />
+        <typeAlias type="com.syntun.entity.DataTableFiled" alias="DataTableFiled" />
+        <typeAlias type="com.syntun.entity.FilterUrl" alias="FilterUrl" />
+        <typeAlias type="com.syntun.entity.InitUrl" alias="InitUrl" />
+        <typeAlias type="com.syntun.entity.ProductUrl" alias="ProductUrl" />
+        <typeAlias type="com.syntun.entity.PurlList" alias="PurlList" />
+        <typeAlias type="com.syntun.entity.ReplaceStr" alias="ReplaceStr" />
+        <typeAlias type="com.syntun.entity.Url302List" alias="Url302List" />
+        <typeAlias type="com.syntun.entity.UrlCookie" alias="UrlCookie" />
+        <typeAlias type="com.syntun.entity.UrlCookieList" alias="UrlCookieList" />
+        <typeAlias type="com.syntun.entity.UrlLimitList" alias="UrlLimitList" />
+        <typeAlias type="com.syntun.entity.WebError" alias="WebError" />
+        <typeAlias type="com.syntun.entity.TableUniqueKey" alias="TableUniqueKey" />
+        <typeAlias type="com.syntun.entity.TableCountList" alias="TableCountList" />
+        <typeAlias type="com.syntun.entity.Crawler144DataTableList" alias="Crawler144DataTableList" />
+        <typeAlias type="com.syntun.entity.Crawler144DataTableFiledList" alias="Crawler144DataTableFiledList" />
+        <typeAlias type="com.syntun.entity.Crawler144InitUrlList" alias="Crawler144InitUrlList" />
+        <typeAlias type="com.syntun.entity.Crawler144PurlList" alias="Crawler144PurlList" />
+        <typeAlias type="com.syntun.entity.Crawler144Url302List" alias="Crawler144Url302List" />
+        <typeAlias type="com.syntun.entity.Crawler144UrlCookie" alias="Crawler144UrlCookie" />
+        <typeAlias type="com.syntun.entity.Crawler144WebError" alias="Crawler144WebError" />
+        <typeAlias type="com.syntun.entity.Crawler144UrlList" alias="Crawler144UrlList" />
+        <typeAlias type="com.syntun.entity.Crawler144UrlStatus" alias="Crawler144UrlStatus" />
+        <typeAlias type="com.syntun.entity.Crawler144PatternListJD" alias="Crawler144PatternListJD" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144DataTableList" alias="CrawlerTmall144DataTableList" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144DataTableFiledList" alias="CrawlerTmall144DataTableFiledList" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144InitUrlList" alias="CrawlerTmall144InitUrlList" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144PurlList" alias="CrawlerTmall144PurlList" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144Url302List" alias="CrawlerTmall144Url302List" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144UrlCookie" alias="CrawlerTmall144UrlCookie" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144WebError" alias="CrawlerTmall144WebError" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144UrlList" alias="CrawlerTmall144UrlList" />
+        <typeAlias type="com.syntun.entity.CrawlerTmall144UrlStatus" alias="CrawlerTmall144UrlStatus" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144DataTableList" alias="CrawlerJD144DataTableList" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144DataTableFiledList" alias="CrawlerJD144DataTableFiledList" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144InitUrlList" alias="CrawlerJD144InitUrlList" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144PurlList" alias="CrawlerJD144PurlList" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144Url302List" alias="CrawlerJD144Url302List" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144UrlCookie" alias="CrawlerJD144UrlCookie" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144WebError" alias="CrawlerJD144WebError" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144UrlList" alias="CrawlerJD144UrlList" />
+        <typeAlias type="com.syntun.entity.CrawlerJD144UrlStatus" alias="CrawlerJD144UrlStatus" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144DataTableList" alias="CrawlerCommentJD144DataTableList" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144DataTableFiledList" alias="CrawlerCommentJD144DataTableFiledList" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144InitUrlList" alias="CrawlerCommentJD144InitUrlList" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144PurlList" alias="CrawlerCommentJD144PurlList" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144Url302List" alias="CrawlerCommentJD144Url302List" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144UrlCookie" alias="CrawlerCommentJD144UrlCookie" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144WebError" alias="CrawlerCommentJD144WebError" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144UrlList" alias="CrawlerCommentJD144UrlList" />
+        <typeAlias type="com.syntun.entity.CrawlerCommentJD144UrlStatus" alias="CrawlerCommentJD144UrlStatus" />
+        <typeAlias type="com.syntun.entity.ModuleOne" alias="ModuleOne" />
+        <typeAlias type="com.syntun.entity.ModuleTwo" alias="ModuleTwo" />
+        <typeAlias type="com.syntun.entity.ModuleThree" alias="ModuleThree" />
+    </typeAliases>
+</configuration>

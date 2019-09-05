@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.TAdminDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="TAdmin" >
+    <id property="id" column="ID" jdbcType="INTEGER" />
+    <result property="passwd" column="Passwd" jdbcType="VARCHAR" />
+    <result property="nickname" column="Nickname" jdbcType="VARCHAR" />
+    <result property="userId" column="user_id" jdbcType="VARCHAR" />
+    <result property="userName" column="user_name" jdbcType="VARCHAR" />
+    <result property="email" column="email" jdbcType="VARCHAR" />
+    <result property="phoneno" column="Phoneno" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectTAdmin" resultType="TAdmin">
+    select * FROM t_admin
+  </select>
+  
+   <select id="getLogin" parameterType="java.util.Map"  resultType="java.util.Map">
+     select * from t_admin where nickname = #{un} 
+     <if test="pw != null" > and passwd = #{pw} </if>
+  </select>
+
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into t_admin (Passwd, Nickname, user_id, user_name, email, Phoneno)
+    values (#{passwd}, #{nickname}, #{userId}, #{userName}, #{email}, #{phoneno})
+  </insert>
+  
+  <update id="changePwd" parameterType="java.util.Map">
+  	update t_admin set Passwd = #{newPwd} where Passwd = #{oldPwd} and Nickname = #{nickName}
+  </update>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from t_admin where Passwd = #{passWord} and Nickname = #{nickName}
+  </select>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update t_admin set Passwd = #{passwd}, 
+  		Nickname = #{nickname}, user_id = #{userId},
+  		user_name = #{userName}, email = #{email},
+  		Phoneno = #{phoneno} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from t_admin where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from t_admin where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+    <update id="update" parameterType="com.syntun.entity.TAdmin" >
+        UPDATE t_admin
+        <trim prefix="set" suffixOverrides=",">
+            <if test="passwd != null and passwd!=''">
+                passwd = #{passwd},
+            </if>
+            <if test="nickname != null and nickname!=''">
+                nickname = #{nickname},
+            </if>
+            <if test="userId != null and userId!=''">
+                user_id = #{userId},
+            </if>
+            <if test="userName != null and userName!=''">
+                user_name = #{userName},
+            </if>
+            <if test="email != null and email!=''">
+                email = #{email},
+            </if>
+            <if test="phoneno != null and phoneno!=''">
+                phoneno = #{phoneno},
+            </if>
+        </trim>
+        WHERE id = #{id}
+    </update>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM t_admin where 1=1
+     <if test="nickname!=null and nickname!=''">
+         AND nickname like '%${nickname}%'
+     </if>
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from t_admin where 1=1 
+     <if test="nickname!=null and nickname!=''">
+         AND nickname like '%${nickname}%'
+     </if>
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+</mapper>

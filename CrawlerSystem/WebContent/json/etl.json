@@ -1,0 +1,24 @@
+{
+	"contentManagement": [
+		{
+			"title": "品类维护",
+			"icon": "icon-vip",
+			"href": "page/syntun/conJsp/CateAccount.jsp",
+			"spread": false
+		},
+		{
+			"title": "标准名称",
+			"icon": "icon-text",
+			"href": "page/syntun/conJsp/NameChart.jsp",
+			"spread": false
+		},
+		{
+			"title": "维护说明",
+			"icon": "icon-xiugai",
+			"href": "page/syntun/other/EditRemark.jsp",
+			"spread": false
+		}
+	]
+}
+
+

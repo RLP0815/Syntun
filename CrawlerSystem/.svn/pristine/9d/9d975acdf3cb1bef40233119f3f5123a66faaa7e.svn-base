@@ -1,0 +1,176 @@
+package com.syntun.controller;
+
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.syntun.entity.InitUrl;
+import com.syntun.service.InitUrlService;
+import com.syntun.util.GenericController;
+
+import net.sf.json.JSONArray;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/initUrl")
+public class InitUrlController {
+    @Resource(name = "initUrlService")
+    InitUrlService initUrlService;
+    
+    
+    @RequestMapping(value = "/login")
+    public ModelAndView login()
+    {
+        ModelAndView mv=new ModelAndView();
+        List<InitUrl> initUrl = initUrlService.login();
+        mv.addObject("initUrl",initUrl);
+        mv.setViewName("/login");
+        return mv;
+    }
+    
+    @RequestMapping(value = "/getAllList")
+	public void getAllList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+    	String urlStr = request.getParameter("urlStr");
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("urlStr",urlStr);
+
+		List<InitUrl> resultMap = initUrlService.getAllList(params);
+		
+		JSONArray json = JSONArray.fromObject(resultMap);
+		
+    	response.getWriter().print(json);
+		
+	}
+    
+	@RequestMapping(value = "/getList")
+	public void getList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String urlStr = request.getParameter("urlStr");
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("page",start);
+		params.put("limit",limit);
+		params.put("urlStr",urlStr);
+		
+		int count = initUrlService.getCount(params);
+		List<InitUrl> result = initUrlService.getList(params);
+		
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+		
+	}
+	
+	@RequestMapping(value = "/addRecord")
+	public void addRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Date day = new Date();    
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+
+		String urlStr = request.getParameter("urlStr");
+		String urlGroup = request.getParameter("urlGroup");
+		String patternTable = request.getParameter("patternTable");
+		String urlStatus = request.getParameter("urlStatus");
+		String urlData = request.getParameter("urlData");
+		String urlCharset = request.getParameter("urlCharset");
+		String sortId = request.getParameter("sortId");
+		String writeTime = df.format(day);
+		String remark = request.getParameter("remark");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("urlStr",urlStr);
+		params.put("urlGroup",urlGroup);
+		params.put("patternTable",patternTable);
+		params.put("urlStatus",urlStatus);
+		params.put("urlData",urlData);
+		params.put("urlCharset",urlCharset);
+		params.put("sortId",sortId);
+		params.put("writeTime",writeTime);
+		params.put("remark",remark);
+		
+		initUrlService.addRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delRecord")
+	public void delRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String id = request.getParameter("id");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("id",id);
+		
+		initUrlService.delRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delAllRecord")
+	public void delAllRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String items = request.getParameter("ids");
+		
+        List<String> delList = new ArrayList<String>();
+        String[] strs = items.split(",");
+        for (String str : strs) {
+            delList.add(str);
+        }
+		
+		initUrlService.delAllRecord(delList);
+		
+	}
+	
+	@RequestMapping(value = "/editRecord")
+	public void editRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String id = request.getParameter("id");
+		String urlStr = request.getParameter("urlStr");
+		String urlGroup = request.getParameter("urlGroup");
+		String patternTable = request.getParameter("patternTable");
+		String urlStatus = request.getParameter("urlStatus");
+		String urlData = request.getParameter("urlData");
+		String urlCharset = request.getParameter("urlCharset");
+		String sortId = request.getParameter("sortId");
+		String writeTime = request.getParameter("writeTime");
+		String remark = request.getParameter("remark");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("id",id);
+		params.put("urlStr",urlStr);
+		params.put("urlGroup",urlGroup);
+		params.put("patternTable",patternTable);
+		params.put("urlStatus",urlStatus);
+		params.put("urlData",urlData);
+		params.put("urlCharset",urlCharset);
+		params.put("sortId",sortId);
+		params.put("writeTime",writeTime);
+		params.put("remark",remark);
+		
+		initUrlService.editRecord(params);
+	}
+   
+}

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.PermissionDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的Permission-->
+  <resultMap id="BaseResultMap" type="Permission" >
+    <id column="ID" property="id" jdbcType="INTEGER" />
+    <result column="Name" property="name" jdbcType="VARCHAR" />
+    <result column="pid" property="pId" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectAllUser" resultType="Permission">
+    select * FROM sys_permission;
+  </select>
+
+  <sql id="Base_Column_List" >
+    ID, Name, pId
+  </sql>
+  
+  <select id="selectByPrimaryKey" resultType="Permission" parameterType="java.lang.Integer" >
+    select * from sys_permission where id = #{id}
+  </select>
+  
+  <select id="getPermission" resultMap="BaseResultMap" >
+    select     
+    <include refid="Base_Column_List" />
+    from sys_permission
+  </select>
+  
+  <!--根据用户id查询权限 -->
+  <select id="getPermissionUseridInfo" resultType="Permission" parameterType="map">
+	   SELECT 
+		  * 
+		FROM
+		  sys_permission 
+		WHERE id IN 
+		  (SELECT 
+		    sys_permission_id 
+		  FROM
+		    sys_role_permission 
+		  WHERE sys_role_id IN 
+		    (SELECT 
+		      roleid 
+		    FROM
+		      t_user_role 
+		    WHERE userid = #{map.userid})) and project = #{map.project} ORDER BY sortstring
+  </select>
+  <!--根据角色id查询权限 -->
+  <select id="getPermissionRoleInfo" resultType="Permission" parameterType="java.lang.String">
+	SELECT
+		*
+	FROM
+		sys_permission
+	WHERE
+		id IN (
+			SELECT
+				sys_permission_id
+			FROM
+				sys_role_permission
+			WHERE
+				sys_role_id =#{userid})
+  </select>
+  <!--根据用户id查询二级菜单权限 -->
+  <select id="getPermissionUserid" resultType="Permission" parameterType="java.lang.String">
+	   SELECT 
+		  * 
+		FROM
+		  sys_permission 
+		WHERE TYPE = 'menu2' 
+		  AND id IN 
+		  (SELECT 
+		    sys_permission_id 
+		  FROM
+		    sys_role_permission 
+		  WHERE sys_role_id IN 
+		    (SELECT 
+		      roleid 
+		    FROM
+		      t_user_role 
+		    WHERE userid = #{userid}))
+  </select>
+    <!--根据用户id查询按钮权限 -->
+  <select id="getPermissionUseridUrl" resultType="Permission" parameterType="java.lang.String">
+	   SELECT 
+		  * 
+		FROM
+		  sys_permission 
+		WHERE TYPE = 'permission' 
+		  AND id IN 
+		  (SELECT 
+		    sys_permission_id 
+		  FROM
+		    sys_role_permission 
+		  WHERE sys_role_id IN 
+		    (SELECT 
+		      roleid 
+		    FROM
+		      t_user_role 
+		    WHERE userid = #{userid}))
+  </select>
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from sys_permission where id = #{id,jdbcType=INTEGER}
+  </delete>
+  
+  <insert id="insert" parameterType="Permission" >
+    insert into sys_permission (name,type,url,pId,available,icon,project,sortstring)
+    values (#{name},#{type},#{url},#{pId},#{available},#{icon},#{project},#{sortstring})
+  </insert>
+  
+  <insert id="insertSelective" parameterType="Permission" >
+    insert into sys_permission
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" > ID, </if>
+      <if test="name != null" > Name, </if>
+      <if test="age != null" >  Age, </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" > #{id,jdbcType=INTEGER}, </if>
+      <if test="name != null" >  #{name,jdbcType=VARCHAR}, </if>
+      <if test="age != null" > #{age,jdbcType=INTEGER}, </if>
+    </trim>
+  </insert>
+  
+  <update id="updateByPrimaryKeySelective" parameterType="Permission" >
+    update sys_permission
+    <set >
+      <if test="name != null" > Name = #{name,jdbcType=VARCHAR}, </if>
+      <if test="age != null" > Age = #{age,jdbcType=INTEGER}, </if>
+    </set>
+    where ID = #{id,jdbcType=INTEGER}
+  </update>
+  
+  <update id="updateByPrimaryKey" parameterType="Permission" >
+   	update sys_permission
+        <trim prefix="set" suffixOverrides=",">
+            <if test="name != null and name!=''">
+                name = #{name},
+            </if>
+            <if test="type != null and type!=''">
+                type = #{type},
+            </if>
+            <if test="url != null and url!=''">
+                url = #{url},
+            </if>
+            <if test="pId != null and pId!=''">
+                pId = #{pId},
+            </if>
+            <if test="available != null and available!=''">
+                available = #{available},
+            </if>
+                icon = #{icon},
+            <if test="project != null and project!=''">
+                project = #{project},
+            </if>
+            <if test="sortstring != null and sortstring!=''">
+                sortstring = #{sortstring},
+            </if>
+        </trim>
+        WHERE id = #{id}
+  </update>
+  
+</mapper>

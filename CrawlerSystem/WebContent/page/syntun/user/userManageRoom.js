@@ -1,0 +1,474 @@
+var treeObj;
+layui.use(['element','form','layer','table','laytpl'],function(){
+	
+	var form = layui.form,
+        layer = parent.layer === undefined ? layui.layer : top.layer,
+        $ = layui.jquery,
+        laytpl = layui.laytpl,
+        table = layui.table;
+    //替换字段列表
+    var tableIns = table.render({
+        elem: '#filedList',
+        //url : '../../json/userList.json',  //roleid=15 代表会议预定角色
+        url :$("#ctx").attr("value") + '/user/getRoomUserList?roleid=15',
+        cellMinWidth : 95,
+        page : true,
+        height : "full-68",
+        limits : [10,15,20,25],
+        limit : 10,
+        id : "filedListTable",
+        cols : [[
+            {type: 'numbers', width:30, fixed: 'left'},
+            {type: 'checkbox', fixed: 'left'},
+            {field: 'id', title: 'ID', align:"center", minWidth:200},
+            //{field: 'userId', title: '用户ID', align:'center',minWidth:200},
+            {field: 'nickname', title: '用户登录名', align:'center',minWidth:200},
+            {field: 'userName', title: '姓名', align:'center',minWidth:200},
+            {field: 'email', title: '邮箱', align:'center',minWidth:200},
+            {field: 'phoneno', title: '电话号码', align:'center',minWidth:200},
+            {title: '操作', width:150, templet:'#newsListBar',fixed:"right",align:"center"}
+        ]]
+    });
+
+    //搜索【此功能需要后台配合，所以暂时没有动态效果演示】
+    $(".search_btn").on("click",function(){
+    	table.reload("filedListTable",{
+    		page: {
+    			curr: 1 //重新从第 1 页开始
+            },
+            url: $("#ctx").attr("value") + '/user/getUserList.ht',
+            method: 'post',
+            where: {
+            	userName : $(".searchVal").val()
+            }
+         })
+         //$(".abstract").val("1、修改刚进入页面无任何操作时按回车键提示“请输入解锁密码！”%OD%OA2、优化关闭弹窗按钮的提示信息位置问题【可能是因为加载速度的原因，造成这个问题，所以将提示信息做了一个延时】%OD%OA3、“个人资料”提供修改功能4、顶部天气信息自动判断位置【忘记之前是怎么想的做成北京的了，可能是我在大首都吧，哈哈。。。】")
+    });
+
+    $(".add_btn").click(function(){
+    	$(".cateId").val("");
+	    $(".cateName").val("");
+    	$(".account").val("");
+    	addFiled();
+    });
+  //添加
+    function addFiled(edit){
+    	empyDate();
+    	$(".addFlied").show();
+    	$(".editFlied").hide();
+    	$(".resetPassword").hide();
+    	var title = "添加用户";
+    	var roleSelect = $("#role").val();
+    	if(roleSelect==null){
+    		//roleInfoList();//角色下拉框赋值
+    	}
+    	if(edit){
+    		queryUserRole(edit.id);
+    		title = "编辑用户";
+    		$("#userid").val(edit.id);
+    		
+    		$(".passwd").val('111111');  
+        	//$(".user_id").val(edit.userId);  
+        	$(".user_name").val(edit.userName);  
+    		
+        	$(".cateId").val(edit.nickname);  
+            $(".cateName").val(edit.email);  
+            $(".account").val(edit.phoneno);  
+    		$(".addFlied").hide();
+    		$(".editFlied").show();
+    		$(".resetPassword").show();
+        }
+    	
+    	$("#addFiled").dialog({  
+            //autoOpen : false,   // 是否自动弹出窗口  
+            modal : true,    // 设置为模态对话框  
+            resizable : true,  
+            width : 500,   //弹出框宽度  
+            height : 550,   //弹出框高度  
+            title : title,  //弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+            	/*'添加':function(data){  
+            		 
+	            }, */
+	            '取消':function(){  
+	            	$(".cateId").val("");
+	        	    $(".cateName").val("");
+	            	$(".account").val("");
+	            	$(this).dialog("close");  
+	            }  
+            } 
+       });  
+    	
+    };
+    function closeData(){
+    	table.reload("filedListTable",{
+    		page: {
+    			curr: 1 //重新从第 1 页开始
+            },
+            url: $("#ctx").attr("value") + '/user/getUserList.ht',
+            method: 'post',
+            where: {
+            	userName : $(".searchVal").val()
+            }
+         })
+	  $(".passwd").val("");
+	  $(".user_id").val("");
+	  $(".user_name").val("");
+      $(".cateId").val("");
+	  $(".cateName").val("");
+      $(".account").val("");
+      $("#addFiled").dialog("close"); 
+    }
+    //清空
+    function empyDate(){
+  	  $(".passwd").val("");
+  	  $(".user_id").val("");
+  	  $(".user_name").val("");
+      $(".cateId").val("");
+  	  $(".cateName").val("");
+      $(".account").val("");
+     }
+    //立即添加按钮
+    form.on("submit(addFlied)",function(data){
+    	//弹出loading
+       var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+ 		$.ajax({
+		  url: $("#ctx").attr("value") + '/user/addUserInfo.ht',
+		  type: 'post',
+		  data: {
+			  "passwd" : $(".passwd").val(), //密码
+	    	  "name" : $(".cateId").val(),   //用户名
+	    	  //"userid" : $(".user_id").val(),//用户ID   
+	    	  "username" : $(".user_name").val(),//用户名称
+	    	  "email" : $(".cateName").val(),  
+	    	  "phone" : $(".account").val(),  
+	    	  "roleid" : $("#role").val(),  
+		  },
+		  async:false,
+		  dataType: 'json',
+		  timeout: 2000,
+		  success: function (data, status) {
+			  if(data.code=='200'){
+				  top.layer.msg("添加成功！");
+			  }else if(data.code=='201'){
+				  top.layer.msg(data.msg);
+			  }else{
+				  top.layer.msg("添加失败！");
+			  }
+			  closeData();
+		  },
+		  fail: function (err, status) {
+			  alert(status);
+		  }
+    	})
+        return false;
+    });
+    //立即修改按钮
+    form.on("submit(editFlied)",function(data){
+       //弹出loading
+       var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+     	$.ajax({
+    		  url: $("#ctx").attr("value") + '/user/editUserRole.ht',
+    		  type: 'post',
+    		  data: {
+    			  "passwd" : "",//密码
+    			  "userid" : $("#userid").val(),//用户id
+    			  "username" : $(".user_name").val(),//用户名称
+    	    	  "name" : $(".cateId").val(),  //用户名
+    	    	  "email" : $(".cateName").val(),  
+    	    	  "phone" : $(".account").val(),  
+    	    	  "roleid" : $("#role").val(),  
+    		  },
+    		  async:false,
+    		  dataType: 'json',
+    		  timeout: 2000,
+    		  success: function (data, status) {
+    			  if(data.code=='200'){
+    				  top.layer.msg("修改成功！");
+    			  }else{
+    				  top.layer.msg("修改失败！");
+    			  }
+    			  closeData();
+    		  },
+    		  fail: function (err, status) {
+    			  alert(status);
+    		  }
+    	})
+
+        return false;
+    })
+    
+        //密码重置
+    form.on("submit(resetPassword)",function(data){
+       //弹出loading
+       var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+     	$.ajax({
+    		  url: $("#ctx").attr("value") + '/user/editUserRole.ht',
+    		  type: 'post',
+    		  data: {
+    			  "passwd" : $(".passwd").val(),//密码
+    			  "userid" : $("#userid").val(),//用户id
+    			  "username" : $(".user_name").val(),//用户名称
+    	    	  "name" : $(".cateId").val(),  //用户名
+    	    	  "email" : $(".cateName").val(),  
+    	    	  "phone" : $(".account").val(),  
+    	    	  "roleid" : $("#role").val(),  
+    		  },
+    		  dataType: 'json',
+    		  timeout: 2000,
+    		  success: function (data, status) {
+    			  if(data.code=='200'){
+    				  top.layer.msg("修改成功！");
+    			  }else{
+    				  top.layer.msg("修改失败！");
+    			  }
+    			  closeData();
+    		  },
+    		  fail: function (err, status) {
+    			  alert(status);
+    		  }
+    	})
+
+        return false;
+    })
+
+    //批量删除
+    $(".delAll_btn").click(function(){
+    	var checkStatus = table.checkStatus('filedListTable'),
+            data = checkStatus.data,
+            ids = [];
+        if(data.length > 0) {
+            for (var i in data) {
+            	ids.push(data[i].id);
+            }
+            layer.confirm('确定删除选中的记录？', {icon: 3, title: '提示信息'}, function (index) {
+                $.get($("#ctx").attr("value") + "/cateAccount/delAllRecord.ht",{
+                    ids : ids.toString()  //将需要删除的newsId作为参数传入
+                },function(data){
+                	top.layer.msg("批量删除成功！");
+                	tableIns.reload();
+                	layer.close(index);
+                })
+            })
+        }else{
+            layer.msg("请选择需要删除的记录");
+        }
+    })
+  
+    //列表操作
+    table.on('tool(filedList)', function(obj){
+        var layEvent = obj.event;
+            data = obj.data;
+        if(layEvent === 'edit'){ //编辑
+            addFiled(data);
+        }else if(layEvent === 'del'){ //删除
+        	layer.confirm('确定删除此记录？',{icon:3, title:'提示信息'},function(index){
+                $.get($("#ctx").attr("value") + "/tadmin/delAllRecord.ht",{
+                	ids : data.id
+                },function(data){
+                	top.layer.msg("删除成功！");
+                	tableIns.reload();
+                    layer.close(index);
+                })
+            });
+        }else if(layEvent === 'query'){
+        	if(treeObj!=undefined){
+            	treeObj.refresh();
+        	}
+        	test(data.id)
+        }
+    });
+    
+})
+
+//树新增
+var setting = {
+        view: {
+            addHoverDom: true,
+            removeHoverDom: false,
+            selectedMulti: true
+        },
+        check: {
+            enable: true
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        edit: {
+            enable: false
+        }
+    };
+
+function test(roid){
+  	$.ajax({
+  		  url: $("#ctx").attr("value") + '/user/getPermission.ht',
+  		  type: 'post',
+  		  data: {"id" : roid},
+  		  dataType: 'json',
+  		  timeout: 2000,
+  		  success: function (data, status) {
+//		    console.log(JSON.stringify(data.userList));
+		    treeObj = $.fn.zTree.init($("#treeDemo"), setting, data.userList);
+		  //设置节点展开
+			var nodes = treeObj.getNodes();
+			for (var i = 0; i < nodes.length; i++) { 
+				treeObj.expandNode(nodes[i], true, true, true);
+			}
+			//设置选中的节点
+			var menuIds = test1(roid);
+			if(menuIds!=null && menuIds !=''){
+				for(var i = 0; i < menuIds.length; i++) {
+					var node = treeObj.getNodeByParam("id", menuIds[i].id);
+					if(node != null) {
+						treeObj.checkNode(node, true)
+					}
+				}
+			}
+  		  },
+  		  fail: function (err, status) {
+  			  alert(status);
+  		  }
+  	})
+}
+function test1(roleId){
+	var flag = "";
+  	$.ajax({
+  		  url: $("#ctx").attr("value") + '/user/getPermissionRoleInfo.ht',
+  		  type: 'post',
+  		  data: {"roleId" : roleId},
+  		  async:false,
+  		  dataType: 'json',
+  		  timeout: 2000,
+  		  success: function (data, status) {
+  			  flag = data.userList;
+//  			  alert(JSON.stringify(flag))
+//  			  console.log(JSON.stringify(flag));
+  		  },
+  		  fail: function (err, status) {
+  			  alert(status);
+  		  }
+  	})
+  	return flag
+}
+function test2(roleId){
+  	$.ajax({
+  		  url: $("#ctx").attr("value") + '/user/getPermissionUseridUrl.ht',
+  		  type: 'post',
+  		  data: {"roleId" : roleId},
+  		  dataType: 'json',
+  		  timeout: 2000,
+  		  success: function (data, status) {
+  			  alert(JSON.stringify(data))
+  			  console.log(JSON.stringify(data));
+  		  },
+  		  fail: function (err, status) {
+  			  alert(status);
+  		  }
+  	})
+}
+//最后获取树的选中id
+function test3(){
+	var v = new Array();
+	var nodes = treeObj.getCheckedNodes();
+	for(var i = 0; i < nodes.length; i++) {
+		//console.log(nodes[i].id)
+		v.add(nodes[i].id)
+	}
+	if(v.isEmpty()){
+		alert("请选择菜单！！");
+		return false;
+	}
+	//保存数据到数据库，先删除原来的，在保存现在的
+  	$.ajax({
+		  url: $("#ctx").attr("value") + '/user/roidPermissionAdd.ht',
+		  type: 'post',
+		  data: {
+			  "roid":"1",
+			  "permissionId" : v
+		  },
+		  async:false,
+		  dataType: 'json',
+		  timeout: 2000,
+		  success: function (data, status) {
+			  if(data.code=='200'){
+				  alert("操作成功!");
+			  }else{
+				  alert("操作失败!");
+			  }
+		  },
+		  fail: function (err, status) {
+			  alert(status);
+		  }
+	})
+}
+//数组操作
+Array.prototype.add = function(item) {
+    this.push(item);
+}
+Array.prototype.isEmpty = function() {
+    if (this.length == 0)
+        return true;
+    else
+        return false;
+}
+	//查询角色表
+function roleInfoList(){
+  	$.ajax({
+		  url: $("#ctx").attr("value") + '/user/getRoleInfo.ht',
+		  type: 'post',
+		  dataType: 'json',
+		  timeout: 2000,
+		  async:false,
+		  success: function (data, status) {
+			  if(data.code=='200'){
+			    var remarks = '<option value="">请选择</option>';
+				for (var i = 0; i < data.roleList.length; i++) {
+	  		    	remarks = remarks + "<option value='"+data.roleList[i].id+"'>"+data.roleList[i].category+"</option>";
+				}
+				$("#role").append(remarks);
+                renderForm();//表单重新渲染，要不然添加完显示不出来新的
+			  }else{
+				  alert("操作失败!");
+			  }
+		  },
+		  fail: function (err, status) {
+			  alert(status);
+		  }
+	})
+}
+//重新渲染表单函数
+function renderForm() {
+    layui.use(['form'], function () {
+        $ = layui.jquery;
+        var form = layui.form;
+        form.render(); //刷新select选择框渲染
+    });
+}
+//根据userid查询用户所属角色
+function queryUserRole(userid){
+  	$.ajax({
+		  url: $("#ctx").attr("value") + '/user/queryUserRole.ht',
+		  type: 'post',
+		  data: {
+			  "userid":userid,
+		  },
+		  dataType: 'json',
+		  timeout: 2000,
+		  async:false,
+		  success: function (data, status) {
+			  if(data.code=='200'){
+				  $("#role").val(data.roleInfo[0].id);
+				  renderForm();//表单重新渲染，要不然添加完显示不出来新的
+			  }else{
+				  alert("操作失败!");
+			  }
+		  },
+		  fail: function (err, status) {
+			  alert(status);
+		  }
+	})
+}

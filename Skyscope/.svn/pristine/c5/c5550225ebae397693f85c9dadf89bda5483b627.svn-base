@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ReplaceFiledDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="ReplaceFiled" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="oldFiled" column="old_filed" jdbcType="VARCHAR" />
+    <result property="unityFiled" column="unity_filed" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectReplaceFiled" resultType="ReplaceFiled">
+    select * FROM replace_filed
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM replace_filed ORDER BY id DESC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM replace_filed
+    <if test="unityFiled != null" > where unity_filed like CONCAT('%',#{unityFiled},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from replace_filed ORDER BY id DESC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from replace_filed where 1=1 
+     <if test="unityFiled != null" > and unity_filed like CONCAT('%',#{unityFiled},'%') </if>
+      ORDER BY id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addFiled" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into replace_filed (old_filed, unity_filed)
+    values (#{oldFiled,jdbcType=VARCHAR}, #{unityFiled,jdbcType=INTEGER})
+  </insert>
+  
+  <delete id="delFiled" parameterType="java.util.Map">
+  	delete from replace_filed where id = #{id}
+  </delete>
+  
+  <delete id="delAllFiled" parameterType="java.lang.Long">
+    delete from replace_filed where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  <update id="editFiled" parameterType="java.util.Map">
+  	update replace_filed set old_filed = #{oldFiled,jdbcType=VARCHAR}, 
+  		unity_filed = #{unityFiled,jdbcType=INTEGER} where id = #{id}
+  </update>
+  
+  
+
+</mapper>

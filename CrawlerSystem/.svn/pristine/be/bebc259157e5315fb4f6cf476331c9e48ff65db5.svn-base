@@ -1,0 +1,279 @@
+package com.syntun.util;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.Session;
+import ch.ethz.ssh2.StreamGobbler;
+
+/**
+ * 读取和修改服务器文件
+ * 
+ * @author wangdong 2019-02-21
+ */
+public class RemoteTxt {
+
+	static PropertiesUtil util = PropertiesUtil.getInstance("./config/config.properties", true);
+	public static String ip = util.getPropertyValue("ip");
+	public static String usr = util.getPropertyValue("name");
+	public static String pwd = util.getPropertyValue("password");
+	public static String directory = util.getPropertyValue("directory");// 日志文件存放的路径
+	public static String directoryback = util.getPropertyValue("directoryback");// 日志文件备份存放的路径
+
+	public static void main(String[] args) throws UnsupportedEncodingException {
+		// writeTxt("1\n" +
+		// "2\n" +
+		// "3\n" +
+		// "4\n" +
+		// "5");
+		// System.out.println(getEncoding(readTxt()));
+		
+		System.out.println(readFileCommand("cd /home \r\n  ls"));
+	}
+
+	/**
+	 * > 覆盖追加写数据 >>是追加写数据
+	 * 
+	 * @param str
+	 * @return
+	 */
+	public static int writeTxt(String str) {
+		// 声明连接对象
+		Connection conn = null;
+		Session ss = null;
+
+		int i = 0;
+		try {
+			// 连接远程服务器
+			conn = new Connection(ip);
+			conn.connect();
+			// 使用用户名和密码登录
+			boolean b = conn.authenticateWithPassword(usr, pwd);
+			if (!b) {
+				throw new IOException("Authentication failed. 连接失败");
+			} else {
+				ss = conn.openSession(); // 打开会话
+				String encodeSet = "export LC_CTYPE=en_US.UTF-8;";  
+				ss.execCommand("echo \"" + str + "\" > " + directory);
+				ss.close();
+				conn.close();
+				i = 1;
+			}
+		} catch (IOException e) {
+			System.err.printf("用户%s密码%s登录服务器%s失败！", usr, pwd, ip);
+			e.printStackTrace();
+		}
+		return i;
+	}
+
+	/**
+	 * 读数据
+	 * 
+	 * @return
+	 */
+	public static String readTxt() {
+		// 创建远程连接，默认连接端口为22，如果不使用默认，可以使用方法
+		// 声明连接对象
+		Connection conn = null;
+		Session ss = null;
+
+		// List<String> dataList = new ArrayList<String>(); //数据
+		String str = "";
+		try {
+			// 连接远程服务器
+			conn = new Connection(ip);
+			conn.connect();
+			// 使用用户名和密码登录
+			boolean b = conn.authenticateWithPassword(usr, pwd);
+			if (!b) {
+				throw new IOException("Authentication failed. 连接失败");
+			} else {
+
+				// 读取文件内容，并复制给UserInfo对象
+				ss = conn.openSession(); // 打开会话
+				ss.execCommand("cat ".concat(directory)); // 读取对应目录下的对应文件
+				InputStream is = new StreamGobbler(ss.getStdout());
+				BufferedReader bs = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+				while (true) {
+					String line = bs.readLine();
+					if (line == null) {
+						break;
+					} else {
+						// 输出数据
+						// System.out.println(line);
+						// dataList.add(line);
+						str += line + "\r\n";
+					}
+				}
+				bs.close();
+				ss.close();
+				conn.close();
+			}
+		} catch (IOException e) {
+			System.err.printf("用户%s密码%s登录服务器%s失败！", usr, pwd, ip);
+			e.printStackTrace();
+		}
+		return str;
+	}
+
+	/**
+	 * 备份数据
+	 * 
+	 * @return
+	 */
+	public static int backups() {
+		// 创建远程连接，默认连接端口为22，如果不使用默认，可以使用方法
+		// 声明连接对象
+		Connection conn = null;
+		Session ss = null;
+
+		int i = 0;
+		try {
+			// 连接远程服务器
+			conn = new Connection(ip);
+			conn.connect();
+			// 使用用户名和密码登录
+			boolean b = conn.authenticateWithPassword(usr, pwd);
+			if (!b) {
+				throw new IOException("Authentication failed. 连接失败");
+			} else {
+				ss = conn.openSession(); // 打开会话
+				ss.execCommand("cp " + directory + " " + directoryback);
+				ss.close();
+				conn.close();
+				i = 1;
+			}
+		} catch (IOException e) {
+			System.err.printf("用户%s密码%s登录服务器%s失败！", usr, pwd, ip);
+			e.printStackTrace();
+		}
+		return i;
+	}
+	/**
+	 * 查看字符串编码
+	 * @param str
+	 * @return
+	 */
+	public static String getEncoding(String str) { 
+		String encode = "UTF-8"; 
+		try { 
+		if (str.equals(new String(str.getBytes(encode), encode))) { //判断是不是GB2312
+		String s = encode; 
+		return s; //是的话，返回“GB2312“，以下代码同理
+		} 
+		} catch (Exception exception) { 
+		} 
+		encode = "GB2312"; 
+		try { 
+		if (str.equals(new String(str.getBytes(encode), encode))) { //判断是不是ISO-8859-1
+		String s1 = encode; 
+		return s1; 
+		} 
+		} catch (Exception exception1) { 
+		} 
+		encode = "ISO-8859-1"; 
+		try { 
+		if (str.equals(new String(str.getBytes(encode), encode))) { //判断是不是UTF-8
+		String s2 = encode; 
+		return s2; 
+		} 
+		} catch (Exception exception2) { 
+		} 
+		encode = "GBK"; 
+		try { 
+		if (str.equals(new String(str.getBytes(encode), encode))) { //判断是不是GBK
+		String s3 = encode; 
+		return s3; 
+		} 
+		} catch (Exception exception3) { 
+		} 
+		return ""; //如果都不是，说明输入的内容不属于常见的编码格式。
+	}
+	
+	/**
+	 * 读取文件命令
+	 * @return
+	 */
+	public static String readFileCommand(String command) {
+		// 创建远程连接，默认连接端口为22，如果不使用默认，可以使用方法
+		// 声明连接对象
+		Connection conn = null;
+		Session ss = null;
+
+		// List<String> dataList = new ArrayList<String>(); //数据
+		String str = "";
+		try {
+			// 连接远程服务器
+			conn = new Connection(ip);
+			conn.connect();
+			// 使用用户名和密码登录
+			boolean b = conn.authenticateWithPassword(usr, pwd);
+			if (!b) {
+				throw new IOException("Authentication failed. 连接失败");
+			} else {
+
+				// 读取文件内容，并复制给UserInfo对象
+				ss = conn.openSession(); // 打开会话
+				ss.execCommand(command); // 读取对应目录下的对应文件
+				InputStream is = new StreamGobbler(ss.getStdout());
+				BufferedReader bs = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+				while (true) {
+					String line = bs.readLine();
+					if (line == null) {
+						break;
+					} else {
+						// 输出数据
+						// System.out.println(line);
+						// dataList.add(line);
+						str += line + "\r\n";
+					}
+				}
+				bs.close();
+				ss.close();
+				conn.close();
+			}
+		} catch (IOException e) {
+			System.err.printf("用户%s密码%s登录服务器%s失败！", usr, pwd, ip);
+			e.printStackTrace();
+		}
+		return str;
+	}
+	/**
+	 * > 覆盖追加写数据 >>是追加写数据
+	 * 
+	 * @param str
+	 * @return
+	 */
+	public static int writeFileCommand(String str) {
+		// 声明连接对象
+		Connection conn = null;
+		Session ss = null;
+
+		int i = 0;
+		try {
+			// 连接远程服务器
+			conn = new Connection(ip);
+			conn.connect();
+			// 使用用户名和密码登录
+			boolean b = conn.authenticateWithPassword(usr, pwd);
+			if (!b) {
+				throw new IOException("Authentication failed. 连接失败");
+			} else {
+				ss = conn.openSession(); // 打开会话
+				ss.execCommand(str);
+				ss.close();
+				conn.close();
+				i = 1;
+			}
+		} catch (IOException e) {
+			System.err.printf("用户%s密码%s登录服务器%s失败！", usr, pwd, ip);
+			e.printStackTrace();
+		}
+		return i;
+	}
+}

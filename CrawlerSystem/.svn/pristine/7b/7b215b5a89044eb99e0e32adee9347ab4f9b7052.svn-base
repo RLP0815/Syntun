@@ -1,0 +1,563 @@
+package com.syntun.util;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Created by wangdong on 2019/3/12.
+ */
+public class DatabaseUtil {
+    private final static Logger LOGGER = LoggerFactory.getLogger(DatabaseUtil.class);
+
+    private static String DRIVER = "com.microsoft.jdbc.sqlserver.SQLServerDriver";
+    private static String URL = "jdbc:sqlserver://192.168.0.15:1433;DatabaseName=syntun_base";
+    private static String USERNAME = "yf02";
+    private static String PASSWORD = "yf001";
+    private static final String SQL = "SELECT * FROM ";// 数据库操作
+    
+/*    public DatabaseUtil(String DRIVER,String URL,String USERNAME,String PASSWORD){
+        this.DRIVER = DRIVER;
+        this.URL = URL;
+        this.USERNAME = USERNAME;
+        this.PASSWORD = PASSWORD;
+    }*/
+
+    static {
+        try {
+            Class.forName(DRIVER);
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("can not load jdbc driver", e);
+        }
+    }
+
+    /**
+     * 获取数据库连接
+     *
+     * @return
+     */
+    public static Connection getConnection(String URL) {
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+        } catch (SQLException e) {
+            LOGGER.error("get connection failure", e);
+        }
+        return conn;
+    }
+
+    /**
+     * 关闭数据库连接
+     * @param conn
+     */
+    public static void closeConnection(Connection conn) {
+        if(conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                LOGGER.error("close connection failure", e);
+            }
+        }
+    }
+    /**
+     * 获取数据库下的所有库名
+     */
+    public static List<String> getDatabaseNames(String URL) {
+        List<String> databaseNames = new ArrayList<>();
+        Connection conn = getConnection(URL);
+        ResultSet rs = null;
+        try {
+            //获取数据库的元数据
+            DatabaseMetaData db = conn.getMetaData();
+            rs = db.getCatalogs();
+            while(rs.next()){
+                String string = rs.getString(1);
+                databaseNames.add(string);
+            }
+        } catch (SQLException e) {
+            LOGGER.error("getTableNames failure", e);
+        } finally {
+            try {
+                rs.close();
+                closeConnection(conn);
+            } catch (SQLException e) {
+                LOGGER.error("close ResultSet failure", e);
+            }
+        }
+        return databaseNames;
+    }
+    /**
+     * 获取数据库下的所有表名
+     */
+    public static List<String> getTableNames(String URL) {
+        List<String> tableNames = new ArrayList<>();
+        Connection conn = getConnection(URL);
+        ResultSet rs = null;
+        try {
+            //获取数据库的元数据
+            DatabaseMetaData db = conn.getMetaData();
+            //从元数据中获取到所有的表名
+            rs = db.getTables(null, null, null, new String[] { "TABLE" });
+            while(rs.next()) {
+                tableNames.add(rs.getString(3));
+            }
+        } catch (SQLException e) {
+            LOGGER.error("getTableNames failure", e);
+        } finally {
+            try {
+                rs.close();
+                closeConnection(conn);
+            } catch (SQLException e) {
+                LOGGER.error("close ResultSet failure", e);
+            }
+        }
+        return tableNames;
+    }
+
+    /**
+     * 获取表中所有字段名称
+     * @param tableName 表名
+     * @return
+     */
+    public static List<String> getColumnNames(String tableName,String URL) {
+        List<String> columnNames = new ArrayList<>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pStemt = null;
+        String tableSql = SQL + tableName;
+        try {
+            pStemt = conn.prepareStatement(tableSql);
+            //结果集元数据
+            ResultSetMetaData rsmd = pStemt.getMetaData();
+            //表列数
+            int size = rsmd.getColumnCount();
+            for (int i = 0; i < size; i++) {
+                columnNames.add(rsmd.getColumnName(i + 1));
+            }
+        } catch (SQLException e) {
+            LOGGER.error("getColumnNames failure", e);
+        } finally {
+            if (pStemt != null) {
+                try {
+                    pStemt.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getColumnNames close pstem and connection failure", e);
+                }
+            }
+        }
+        return columnNames;
+    }
+    
+    /**
+     * 获取校对结果
+     * @param tableName 表名
+     * @return
+     */
+    public static HashMap<String, Set<String>> getCheckResult(String checkMethod,String URL,String tableName,String column1,String column2) {
+    	HashMap<String, Set<String>> checkResult = new HashMap<String, Set<String>>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pst = null;
+        try {
+	        String sql = "select "+column1+","+column2+" from " + tableName;
+	        pst = conn.prepareStatement(sql);
+			//System.out.println(sql);
+			ResultSet rs = pst.executeQuery();
+
+			Set<String> st = null;
+			if(checkMethod.equals("qc_btn1")){
+			//然后以查询列分组，计算每个查询列后对应几个被查询列,多于两个的抛出
+				while (rs.next()) {
+					if(checkResult.containsKey(rs.getString(column1))){
+						st = checkResult.get(rs.getString(column1));
+					}else{
+						st = new HashSet<String>();
+					}
+					st.add(rs.getString(column2));
+					checkResult.put(rs.getString(column1), st);
+				}
+			}else if(checkMethod.equals("qc_btn2")){
+			// 选取某种表中某一列，然后查询此列内容是否在标准名字中存在
+				while (rs.next()) {
+					if((rs.getString(column1)==null || rs.getString(column1) == "")
+							|| (rs.getString(column2)==null ||rs.getString(column2) == "")){
+						if(checkResult.containsKey(rs.getString(column1))){
+							st = checkResult.get(rs.getString(column1));
+						}else{
+							st = new HashSet<String>();
+						}
+						st.add(rs.getString(column2));
+						checkResult.put(rs.getString(column1), st);
+					}else if(rs.getString(column2).indexOf(rs.getString(column1)) == -1){
+						if(checkResult.containsKey(rs.getString(column1))){
+							st = checkResult.get(rs.getString(column1));
+						}else{
+							st = new HashSet<String>();
+						}
+						st.add(rs.getString(column2));
+						checkResult.put(rs.getString(column1), st);
+					}
+				}
+			}
+        } catch (SQLException e) {
+            LOGGER.error("getCheckResult failure", e);
+        } finally {
+            if (pst != null) {
+                try {
+                	pst.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getCheckResult close pstem and connection failure", e);
+                }
+            }
+        }
+        return checkResult;
+    }
+    /**
+     * 获取校对结果
+     * @param tableName 表名
+     * @return
+     */
+    public static Set<String> getCheckResultSet(String check,String URL,String tableName,String column1) {
+    	Set<String> checkResult = new HashSet<>();
+    	if(check.indexOf("，") != -1){
+    		check = check.replace("，", ",");
+    	}
+    	String checkMethod = check;
+    	if(check.split(",").length > 1){
+    		checkMethod = check.split(",")[0];
+    	}
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pst = null;
+        try {
+	        String sql = "select "+column1+" from " + tableName;
+	        pst = conn.prepareStatement(sql);
+			//System.out.println(sql);
+			ResultSet rs = pst.executeQuery();
+
+			//两个内容相同但是大小写不同的值
+			if(checkMethod.equals("qc_btn1")){
+				HashMap<String, Set<String>> mapSet = new HashMap<String, Set<String>>();
+				Set<String> st = null;
+				while (rs.next()) {
+					//都转换为小写比较
+					if(mapSet.containsKey(rs.getString(column1).toLowerCase())){
+						st = mapSet.get(rs.getString(column1).toLowerCase());
+					}else{
+						st = new HashSet<>();
+					}
+					st.add(rs.getString(column1));
+					mapSet.put(rs.getString(column1).toLowerCase(), st);
+				}
+				for(String key : mapSet.keySet()){
+					if(mapSet.get(key).size() > 1){
+						for(String s: mapSet.get(key)){
+							checkResult.add(s);
+						}
+					}
+				}
+			//是否有前空格、后空格的，还有中间有多于一个的连续空格
+			}else if(checkMethod.equals("qc_btn2")){
+				while (rs.next()) {
+					String s = rs.getString(column1);
+					//判断前后有空格
+					if(s.length() != s.trim().length()){
+						checkResult.add(s);
+						continue;
+					//判断中间有多个空格
+					}else if(s.length()-s.replace(" ", "").length() > 1){
+						checkResult.add(s);
+					}
+				}
+			//是否有非法值
+			}else if(checkMethod.equals("qc_btn3")){
+				while (rs.next()) {
+					String s = rs.getString(column1);
+					boolean ifIll = false;
+					for(int i=1; i<check.split(",").length; i++){
+						if(s.indexOf(check.split(",")[i]) != -1){
+							ifIll = true;
+							continue;
+						}
+					}
+					//判断前后有空格
+					if(ifIll){
+						checkResult.add(s);
+					}
+				}
+			}
+			
+        } catch (SQLException e) {
+            LOGGER.error("getCheckResultSet failure", e);
+        } finally {
+            if (pst != null) {
+                try {
+                	pst.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getCheckResultSet close pstem and connection failure", e);
+                }
+            }
+        }
+        return checkResult;
+    }
+    /**
+     * 获取查询条件
+     * @param tableName 表名
+     * @return
+     */
+    public static List<String> getListVal(String URL, String tableName, String column) {
+    	List<String> checkResult = new ArrayList<>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pst = null;
+        try {
+	        String sql = "select distinct " + column +" from " + tableName;
+	        pst = conn.prepareStatement(sql);
+			ResultSet rs = pst.executeQuery();
+			while (rs.next()) {
+				checkResult.add(rs.getString(column));
+			}
+        } catch (SQLException e) {
+            LOGGER.error("getListVal failure", e);
+        } finally {
+            if (pst != null) {
+                try {
+                	pst.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getListVal close pstem and connection failure", e);
+                }
+            }
+        }
+        return checkResult;
+    }
+    /**
+     * 获取查询条件
+     * @param tableName 表名
+     * @return
+     */
+    public static List<String> getListVal2(String URL, String tableName, String column, String listVal) {
+    	List<String> checkResult = new ArrayList<>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pst = null;
+        try {
+	        String sql = "select distinct " + column +" from " + tableName + " where 品类 = '" + listVal + "'";
+	        pst = conn.prepareStatement(sql);
+			ResultSet rs = pst.executeQuery();
+			while (rs.next()) {
+				checkResult.add(rs.getString(column));
+			}
+        } catch (SQLException e) {
+            LOGGER.error("getListVal failure", e);
+        } finally {
+            if (pst != null) {
+                try {
+                	pst.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getListVal close pstem and connection failure", e);
+                }
+            }
+        }
+        return checkResult;
+    }
+    /**
+     * 获取查询条件
+     * @param tableName 表名
+     * @return
+     */
+    public static List<String> getConnectVal(String URL, String tableName, String column) {
+    	List<String> checkResult = new ArrayList<>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pst = null;
+        try {
+	        String sql = "select distinct 内容 from " + tableName + " where 列名='" + column +"'";
+	        pst = conn.prepareStatement(sql);
+			ResultSet rs = pst.executeQuery();
+			while (rs.next()) {
+				checkResult.add(rs.getString("内容"));
+			}
+        } catch (SQLException e) {
+            LOGGER.error("getListVal failure", e);
+        } finally {
+            if (pst != null) {
+                try {
+                	pst.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getListVal close pstem and connection failure", e);
+                }
+            }
+        }
+        return checkResult;
+    }
+    /**
+     * 获取校对结果
+     * @param tableName 表名
+     * @return
+     */
+    public static Set<String> getCheckResultThree(String checkMethod,String URL,String tableName,String column1,String columnB1,
+    		String listVal,String connectKey1,String connectBKey1,String connectVal1,String connectKey2,String connectBKey2,String connectVal2) {
+    	Set<String> checkResult = new HashSet<>();
+        //与数据库的连接
+    	String urlInfo = "jdbc:sqlserver://192.168.0.15:1433;DatabaseName=info";
+        Connection conn = getConnection(URL);
+        Connection connInfo = getConnection(urlInfo);
+        
+        PreparedStatement pst = null;
+        PreparedStatement pstInfo = null;
+        try {
+        	Set<String> checkInfo = new HashSet<>();
+			//用[行业规则]表中某列去第一张表里find，有不在规则表的数据抛出
+			if(checkMethod.equals("qc_btn1")){
+				String sqlInfo = "select distinct "+column1+" from 行业规则 where 1=1 and 品类='"+listVal+"'";
+		        if(connectKey1 != null && connectKey1 != ""){
+		        	sqlInfo += " and " + connectKey1 + "='" + connectVal1 + "'";
+		        }
+		        if(connectKey2 != null && connectKey2 != ""){
+		        	sqlInfo += " and " + connectKey2 + "='" + connectVal2 + "'";
+		        }
+		        pstInfo = conn.prepareStatement(sqlInfo);
+				ResultSet rsInfo = pstInfo.executeQuery();
+				while (rsInfo.next()) {
+					checkInfo.add(rsInfo.getString(column1));
+				}
+			//用[参数表列名对应内容]表中（列名）列找第一张表中对应列名，第一张表此列有不在[参数表列名对应内容]表的数据抛出
+			}else if(checkMethod.equals("qc_btn2")){
+				String sqlInfo = "select distinct 内容 from 行业规则 where 1=1 and 品类='"+listVal+"'";
+		        if(column1 != null && column1 != ""){
+		        	sqlInfo += " and 列名 ='" + column1 + "'";
+		        }
+		        pstInfo = conn.prepareStatement(sqlInfo);
+				ResultSet rsInfo = pstInfo.executeQuery();
+				while (rsInfo.next()) {
+					checkInfo.add(rsInfo.getString(column1));
+				}
+			}
+			String sql = "select product_id,"+column1+" from " + tableName + " where 1=1";
+	        if(connectBKey1 != null && connectBKey1 != ""){
+	        	sql += " and " + connectBKey1 + "='" + connectVal1 + "'";
+	        }
+	        if(connectBKey2 != null && connectBKey2 != ""){
+	        	sql += " and " + connectBKey2 + "='" + connectVal2 + "'";
+	        }
+	        pst = conn.prepareStatement(sql);
+			ResultSet rs = pst.executeQuery();
+			while (rs.next()) {
+				if(!checkInfo.contains(rs.getString(columnB1))){
+					checkResult.add(rs.getString("product_id") + "@@" + rs.getString(columnB1));
+				}
+			}
+			
+        } catch (SQLException e) {
+            LOGGER.error("getCheckResultSet failure", e);
+        } finally {
+            if (pst != null) {
+                try {
+                	pst.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("pst: getCheckResultThree close pstem and connection failure", e);
+                }
+            }
+            if (pstInfo != null) {
+                try {
+                	pstInfo.close();
+                    closeConnection(connInfo);
+                } catch (SQLException e) {
+                    LOGGER.error("pstInfo: getCheckResultThree close pstem and connection failure", e);
+                }
+            }
+        }
+        return checkResult;
+    }
+    /**
+     * 获取表中所有字段类型
+     * @param tableName
+     * @return
+     */
+    public static List<String> getColumnTypes(String tableName,String URL) {
+        List<String> columnTypes = new ArrayList<>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pStemt = null;
+        String tableSql = SQL + tableName;
+        try {
+            pStemt = conn.prepareStatement(tableSql);
+            //结果集元数据
+            ResultSetMetaData rsmd = pStemt.getMetaData();
+            //表列数
+            int size = rsmd.getColumnCount();
+            for (int i = 0; i < size; i++) {
+                columnTypes.add(rsmd.getColumnTypeName(i + 1));
+            }
+        } catch (SQLException e) {
+            LOGGER.error("getColumnTypes failure", e);
+        } finally {
+            if (pStemt != null) {
+                try {
+                    pStemt.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getColumnTypes close pstem and connection failure", e);
+                }
+            }
+        }
+        return columnTypes;
+    }
+
+    /**
+     * 获取表中字段的所有注释
+     * @param tableName
+     * @return
+     */
+    public static List<String> getColumnComments(String tableName,String URL) {
+        List<String> columnTypes = new ArrayList<>();
+        //与数据库的连接
+        Connection conn = getConnection(URL);
+        PreparedStatement pStemt = null;
+        String tableSql = SQL + tableName;
+        List<String> columnComments = new ArrayList<>();//列名注释集合
+        ResultSet rs = null;
+        try {
+            pStemt = conn.prepareStatement(tableSql);
+            rs = pStemt.executeQuery("show full columns from " + tableName);
+            while (rs.next()) {
+                columnComments.add(rs.getString("Comment"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                    closeConnection(conn);
+                } catch (SQLException e) {
+                    LOGGER.error("getColumnComments close ResultSet and connection failure", e);
+                }
+            }
+        }
+        return columnComments;
+    }
+    public static void main(String[] args) {
+       String a = "num1,";
+       System.out.println(a.split(",").length);
+    }
+}

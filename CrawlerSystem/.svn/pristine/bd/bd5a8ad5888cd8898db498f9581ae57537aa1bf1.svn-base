@@ -1,0 +1,266 @@
+package com.syntun.controller;
+
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.syntun.entity.UrlCookieList;
+import com.syntun.etl.tools.ConvertSql;
+import com.syntun.etl.tools.InsertData132;
+import com.syntun.service.UrlCookieListService;
+import com.syntun.util.GenericController;
+import com.syntun.util.POIReadExcelTool;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/urlCookieList")
+public class UrlCookieListController {
+    @Resource(name = "urlCookieListService")
+    UrlCookieListService urlCookieListService;
+    
+    
+    @RequestMapping(value = "/login")
+    public ModelAndView login()
+    {
+        ModelAndView mv=new ModelAndView();
+        List<UrlCookieList> urlCookieList = urlCookieListService.login();
+        mv.addObject("urlCookieList",urlCookieList);
+        mv.setViewName("/login");
+        return mv;
+    }
+    
+    @RequestMapping(value = "/getAllList")
+	public void getAllList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+    	String urlCookie = request.getParameter("urlCookie");
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("urlCookie",urlCookie);
+
+		List<UrlCookieList> resultMap = urlCookieListService.getAllList(params);
+		
+		JSONArray json = JSONArray.fromObject(resultMap);
+		
+    	response.getWriter().print(json);
+		
+	}
+    
+	@RequestMapping(value = "/getList")
+	public void getList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String urlCookie = request.getParameter("urlCookie");
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("page",start);
+		params.put("limit",limit);
+		params.put("urlCookie",urlCookie);
+		
+		int count = urlCookieListService.getCount(params);
+		List<UrlCookieList> result = urlCookieListService.getList(params);
+		
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+		
+	}
+	
+	@RequestMapping(value = "/addRecord")
+	public void addRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String urlGroup = request.getParameter("urlGroup");
+		String urlCookie = request.getParameter("urlCookie");
+		String sortId = request.getParameter("sortId");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("urlGroup",urlGroup);
+		params.put("urlCookie",urlCookie);
+		params.put("sortId",sortId);
+		
+		urlCookieListService.addRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delRecord")
+	public void delRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String id = request.getParameter("id");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("id",id);
+		
+		urlCookieListService.delRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delAllRecord")
+	public void delAllRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String items = request.getParameter("ids");
+		
+        List<String> delList = new ArrayList<String>();
+        String[] strs = items.split(",");
+        for (String str : strs) {
+            delList.add(str);
+        }
+		
+		urlCookieListService.delAllRecord(delList);
+		
+	}
+	
+	@RequestMapping(value = "/editRecord")
+	public void editRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String id = request.getParameter("id");
+		String urlGroup = request.getParameter("urlGroup");
+		String urlCookie = request.getParameter("urlCookie");
+		String sortId = request.getParameter("sortId");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("id",id);
+		params.put("urlCookie",urlCookie);
+		params.put("urlGroup",urlGroup);
+		params.put("sortId",sortId);
+		
+		urlCookieListService.editRecord(params);
+	}
+	@RequestMapping(value = "/upload")
+	@ResponseBody
+    public JSONObject upload(MultipartFile file, HttpServletRequest servletRequest) throws IOException { 
+		JSONObject resObj = new JSONObject();
+		// request.getSession().getServletContext().getRealPath("/"); //服务器地址 
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss"); 
+		Date day = new Date(); 
+		String dateDay = df.format(day);
+
+		String fileName = file.getOriginalFilename();  
+		String fileName0 = fileName.substring(0, fileName.indexOf("."));  
+		String fileName1 = fileName.substring(fileName.indexOf("."));  
+		fileName = fileName0 + "-" + dateDay + fileName1;
+		String path = "/home/CrawlerSystem/uplodExcel/urlCookieList";
+		//String path = "D:\\upload";
+	    File dir = new File(path,fileName);          
+	    if(!dir.exists()){  
+	        dir.mkdirs();  
+	    }  
+		file.transferTo(dir); 
+		
+		String filePath = file.toString();
+		System.out.println(filePath);
+		String excelPath = "/home/CrawlerSystem/uplodExcel/urlCookieList/"+fileName;
+		//String excelPath = "D:/upload/urlCookieList/"+fileName;
+		//String excelPath = filePath.replace("\\", "/");
+		
+		List<String> dataTatal = new ArrayList<String>();
+		List<String> fieldList = new ArrayList<>();
+		List<HashMap<String, String>> excelData = new ArrayList<HashMap<String, String>>();
+		
+		POIReadExcelTool poi = new POIReadExcelTool();
+		List<List<String>> list = poi.read(excelPath);
+		//excel数据条数
+		int ex = 0;
+		
+	    if (list != null) {
+	    	ex = list.size() - 1;
+	    	for (int i = 0; i < list.size(); i++) {
+	    		HashMap<String, String> dateMap = new HashMap<String, String>();
+	            //System.out.print("第" + (i) + "行");
+	            List<String> cellList = list.get(i);
+	            //System.out.print(" 本行" + cellList.size() + "列");	           
+	            if(i==0){
+	            	fieldList = list.get(i);
+	            	continue;
+	            }else{
+	            	for (int j = 0; j <= 3; j++) {
+	            		if(cellList.get(j).indexOf(".") != -1){
+	            			dateMap.put(fieldList.get(j),cellList.get(j).substring(0, cellList.get(j).indexOf(".")));
+	            		}else{
+	            			dateMap.put(fieldList.get(j),cellList.get(j));
+	            		}
+	 	        	}
+	            	excelData.add(dateMap);
+	            }
+	        }
+	    	//System.out.println(excelData);
+	    	
+	    	for(HashMap<String, String> shopMap : excelData){
+	    		String sql = ConvertSql.getSql("xitong.url_cookie_list", fieldList, shopMap);
+	    		dataTatal.add(sql);
+	    	}
+			
+			Thread t1 = new Thread(new InsertData132(dataTatal));
+			t1.start();
+			
+			boolean isAlice = true;
+			while(isAlice){
+				if(!t1.isAlive()){
+					isAlice = false;
+					resObj.put("code", 0);
+					resObj.put("msg", "上传Excel表格中数据："+ex+"条");
+					resObj.put("data", "");
+				}
+			 }
+			
+	    }else{
+			resObj.put("code", 0);
+			resObj.put("msg", "上传Excel表格中数据："+ex+"条");
+			resObj.put("data", "");
+	    }
+//	    String st = delExcel(excelPath);
+//	    if(st.equals("YES")){
+//	    	String fileNameBak = file.getOriginalFilename() + "." + dateDay;    
+//	 	    File dirBak = new File(path,fileNameBak);          
+//	 	    if(!dirBak.exists()){  
+//	 	    	dirBak.mkdirs();  
+//	 	    }  
+//	 		//file.transferTo(dirBak); 
+//	    }
+		return resObj;
+	}
+	
+	public String delExcel(String filePath){
+		File file = new File(filePath);
+		// 如果文件路径所对应的文件存在，并且是一个文件，则直接删除
+		if (file.exists()) {
+			if (file.delete()) {
+				System.out.println("删除成功！");
+				return "YES";
+			} else {
+				System.out.println("删除失败！");
+				return "NO";
+			}
+		} else {
+			System.out.println("删除单个文件失败：不存在！");
+			return "NOerr";
+		}
+	}
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ServersDao" >
+  
+  <delete id="delete" parameterType="java.lang.String" >
+    delete from severs where id = #{id}
+  </delete>
+  
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true" parameterType="com.syntun.entity.Servers" >
+    insert into severs (ip, name, password)
+    values (#{ip},#{name},#{password})
+  </insert>
+  
+  <update id="update" parameterType="com.syntun.entity.Servers" >
+    UPDATE severs
+    <trim prefix="set" suffixOverrides=",">
+        <if test="ip != null and ip!=''">
+            ip = #{ip},
+        </if>
+        <if test="name != null and name!=''">
+            name = #{name},
+        </if>
+        <if test="password != null and password!=''">
+            password = #{password},
+        </if>
+        <if test="isdel != null and isdel!=''">
+            isdel = #{isdel},
+        </if>
+    </trim>
+    WHERE id = #{id}
+	</update>
+    
+    <select id="findone" parameterType="String" resultType="com.syntun.entity.Servers">
+        SELECT * FROM severs where id=#{id}
+    </select>
+  
+</mapper>

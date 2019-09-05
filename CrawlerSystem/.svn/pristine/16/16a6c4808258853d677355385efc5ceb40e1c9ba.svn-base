@@ -1,0 +1,44 @@
+package com.syntun.controller.systemlog;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import com.syntun.entity.Server;
+import com.syntun.util.RemoteShellExecutor;
+import com.syntun.util.Shell;
+/**
+ * 查询服务器状态线程
+ * Created by wangdong on 2019/2/14.
+ */
+
+public class StartCallable implements Callable<List<Server>> {
+
+    /**当前是属于第几段线程**/
+    private int pageIndex;
+
+    private List<Server> list;
+
+    public StartCallable(int pageIndex,List<Server> list){
+        this.pageIndex = pageIndex;
+        this.list = list;
+    }
+
+    @Override
+    public List<Server> call() throws Exception {
+        System.err.println(String.format("pageIndex:%s size:%s",pageIndex,list.size()));
+        if(null != list && list.size() >0){
+            for(Server s: list){
+                try {
+					//Map map = RemoteShellExecutor.exec(s.getStartpath(),s.getIp(),s.getName(),s.getPassword());
+            		String res = Shell.exec(s.getIp(),s.getName(),s.getPassword(), 22,s.getStartpath());
+            		System.out.println(Thread.currentThread().getName()+":"+res);
+                } catch (Exception e) {
+                	e.printStackTrace();
+                    s.setException(e.getMessage());
+                }
+            }
+        }
+        return list;
+    }
+}

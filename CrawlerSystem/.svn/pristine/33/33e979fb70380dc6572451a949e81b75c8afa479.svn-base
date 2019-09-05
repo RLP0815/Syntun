@@ -1,0 +1,865 @@
+package com.syntun.controller;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.client.Result;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.select.Elements;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.syntun.controller.systemlog.SysLogger;
+import com.syntun.datasource.DataSourceContextHolder;
+import com.syntun.entity.DataRrocessingSql;
+import com.syntun.entity.PlatformClassify;
+import com.syntun.service.DataRrocessingSqlService;
+import com.syntun.service.InitUrlService;
+import com.syntun.service.PlatformClassifyService;
+import com.syntun.util.DatabaseUtil;
+import com.syntun.util.GenericController;
+import com.syntun.util.HBaseUtils;
+import com.syntun.util.MysqlDatabaseUtil;
+import com.syntun.util.ResultJson;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+/**
+ * 平台分类
+ */
+@Controller
+@RequestMapping(value = "/platformClassify")
+public class PlatformClassifyController {
+
+	
+    @Resource(name = "platformClassifyService")
+    PlatformClassifyService platformClassifyService;
+    
+    @Resource(name = "initUrlService")
+    InitUrlService initUrlService;
+    
+    @Resource(name = "dataRrocessingSqlService")
+    DataRrocessingSqlService dataRrocessingSqlService;
+    
+    /**
+     *爬取平台分类
+     *	 url = "https://www.jd.com/allSort.aspx";//url
+         classifysTag = "div[class='col']";//分类标签
+         classifyTag = "div[class='category-item m']";//分类标签下子分类标签
+         oneClassifyName = "div[class='mt']/span";//一级分类名称
+         twoClassifyTag = "div[class='mc']/dl[class='clearfix']";//二级分类标签
+         twoClassifyName = "dt/a";//二级分类名称
+         threeClassifyTag = "dd/a";//三级分类标签
+         threeClassifyName = "a";//三级分类名称
+         threeClassifyUrl = "a/href";//三级分类Url
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "新增平台分类表数据", methodType = "platformClassifyAdd")
+    @ResponseBody
+    @RequestMapping(value = "/platformClassifyAdd", produces = "application/json;charset=UTF-8")
+    public Map platformClassifyAdd(HttpServletRequest request) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        List<PlatformClassify> ps = new ArrayList<>();
+		try {
+	        String url = request.getParameter("url");//url
+	        String flag = request.getParameter("platformFlag");//flag 1:淘宝 ，2：京东，3：国美，4：苏宁 
+/*	        String classifysTag = request.getParameter("classifysTag");;//分类标签
+	        String classifyTag = request.getParameter("classifyTag");//分类标签下子分类标签
+	        String oneClassifyName = request.getParameter("oneClassifyName");//一级分类名称
+	        String twoClassifyTag = request.getParameter("twoClassifyTag");//二级分类标签
+	        String twoClassifyName = request.getParameter("twoClassifyName");//二级分类名称
+	        String threeClassifyTag = request.getParameter("threeClassifyTag");//三级分类标签
+	        String threeClassifyName = request.getParameter("threeClassifyName");//三级分类名称
+	        String threeClassifyUrl = request.getParameter("threeClassifyUrl");//三级分类Url
+*/	        if(flag.equals("1")){
+				ps = getTaobao(url);
+			}else if(flag.equals("2")){
+				ps = getJidong(url);
+			}else if(flag.equals("3")){
+				ps = getGome(url);
+			}else if(flag.equals("4")){
+				ps = getSuning(url);
+			}
+			if(ps.size()>0){
+		        //批量插入
+				DataSourceContextHolder.setDbType("ds_mop");
+		        platformClassifyService.insertByBatch(ps);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 获取字符串中数字
+     * @param str
+     * @return
+     */
+    public static List<String> getUrl(String str){
+        Pattern p = Pattern.compile("\\d+");
+        Matcher m = p.matcher(str);
+        List<String> l = new ArrayList<>();
+        while (m.find()) {
+            l.add(m.group());
+        }
+        return l;
+    }
+    
+    /**
+     * 查询平台分类列表
+     * @param request
+     * @param response
+     * @throws Exception
+     */
+	@RequestMapping(value = "/getPlatformClassifyInfo")
+	public void getPlatformClassifyInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+		String platformid = request.getParameter("platformid");//平台id
+		String platformname = request.getParameter("platformname");//平台名称
+		String onecategoryname = request.getParameter("onecategoryname");//一级分类名称
+		String twocategoryname = request.getParameter("twocategoryname");//二级分类名称
+		String threecategoryname = request.getParameter("threecategoryname");//三级分类名称
+		
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap params = new HashMap();
+		params.put("page",start);
+		params.put("limit",limit);
+		
+		params.put("platformid",platformid);
+		params.put("platformname",platformname);
+		params.put("onecategoryname",onecategoryname);
+		params.put("twocategoryname",twocategoryname);
+		params.put("threecategoryname",threecategoryname);
+		
+		DataSourceContextHolder.setDbType("ds_mop");
+		int count = platformClassifyService.getTotal(params);
+		List<PlatformClassify> result = platformClassifyService.find(params);
+
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+	}
+    /**
+     * 三级平台分类url插入init_url_list表
+     * @throws Exception 
+     */
+	@SysLogger(modelName = "新增init_url_list表数据", methodType = "addInitUrlList")
+    @ResponseBody
+    @RequestMapping(value = "/addInitUrlList", produces = "application/json;charset=UTF-8")
+    public Map addInitUrlList(String platformClassifyInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(platformClassifyInfo);//把String转换为json 
+			List<PlatformClassify> list = (List) JSONArray.toCollection(jsonArray, PlatformClassify.class);
+			if(list.size()>0){
+				Date day = new Date();    
+				SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+				for(PlatformClassify p:list){
+					HashMap<String, Object> params = new HashMap<String, Object>();
+					params.put("urlStr",p.getThreecategoryurl());//三级分类url
+					params.put("urlGroup",p.getPlatformid());
+					params.put("patternTable","1");
+					params.put("urlStatus","1");
+					params.put("urlData","");
+					params.put("urlCharset","");
+					params.put("sortId","100");
+					params.put("writeTime",df.format(day));
+					params.put("remark",p.getThreecategoryname());
+					DataSourceContextHolder.setDbType("ds_mop");
+					initUrlService.addRecord(params);
+				}
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    
+    /**
+     * 爬取平台数据
+     * 参数
+     * @param url
+     * @param classifysTag
+     * @param classifyTag
+     * @param oneClassifyName
+     * @param twoClassifyTag
+     * @param twoClassifyName
+     * @param threeClassifyTag
+     * @param threeClassifyName
+     * @param threeClassifyUrl
+     * @throws Exception
+     */
+    public static List<PlatformClassify> getUrlData(String url,String classifysTag,String classifyTag,String oneClassifyName,String twoClassifyTag,String twoClassifyName,String threeClassifyTag,String threeClassifyName,String threeClassifyUrl)throws Exception{
+    	
+    	List<PlatformClassify> ps = new ArrayList<>();
+        Document doc = Jsoup.connect(url).maxBodySize(0).get();
+        //分类标签
+        Elements liList = doc.select(classifysTag);
+        //循环liList的数据
+        for (Element item : liList) {
+            //分类标签下子分类标签
+            Elements liList2 = item.select(classifyTag);
+            for (Element item2 : liList2) {
+                //一级分类名称
+                String[] split = oneClassifyName.split("/");
+                String one = item2.select(split[0]).select(split[1]).text();
+                //二级分类标签
+                String[] split1 = twoClassifyTag.split("/");
+                Elements liList3 = item2.select(split1[0]).select(split1[1]);
+                for (Element item3 : liList3) {
+                    //二级分类名称
+                    String[] split2 = twoClassifyName.split("/");
+                    String two = item3.select(split2[0]).select(split2[1]).text();
+                    //三级分类标签
+                    String[] split3 = threeClassifyTag.split("/");
+                    Elements liList4 = item3.select(split3[0]).select(split3[1]);
+                    for (Element item4 : liList4) {
+                        //三级分类名称
+                        String threeName = item4.select(threeClassifyName).text();
+                        //三级分类URL
+                        String[] split4 = threeClassifyUrl.split("/");
+                        String threeUrl = item4.select(split4[0]).attr(split4[1]);
+                        List<String> url1 = new ArrayList<>();
+                        //插入数据对象
+            			PlatformClassify p = new PlatformClassify();
+            			p.setPlatformid("2");
+            			p.setPlatformname("京东平台");
+            			p.setThreecategoryurl("https:"+threeUrl);
+                        //包含参数一级分类id，二级分类id，三级分类id
+                        if(threeUrl.contains("?")){
+                			p.setOnecategoryname(one);//一级分类名称
+                			p.setTwocategoryname(two);//二级分类名称
+                			p.setThreecategoryname(threeName);//三级分类名称
+                            url1 = getUrl(threeUrl);
+                            if(url1.size()>0){
+                                for(int i=0;i<url1.size();i++){
+                                    if(i==0){
+                                        //一级分类id
+                                        String oneClassid = url1.get(i);
+                                        if(StringUtils.isNotBlank(oneClassid)){
+                                			p.setOnecategoryid(oneClassid);
+                                        }
+                                    }else if(i==1){
+                                        //二级分类id
+                                        String twoClassid = url1.get(i);
+                                        if(StringUtils.isNotBlank(twoClassid)){
+                                			p.setTwocategoryid(twoClassid);
+                                        }
+                                    }else if(i==2){
+                                        //三级分类id
+                                        String threeClassid = url1.get(i);
+                                        if(StringUtils.isNotBlank(threeClassid)){
+                                			p.setThreecategoryid(threeClassid);
+                                        }
+                                    }
+                                }
+                            }
+                            //有平台id才保存
+                            ps.add(p);
+                        }
+                    }
+                }
+            }
+        }
+        return ps;
+    }
+    /**
+     * 查询数据库列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getDataBaseName", produces = "application/json;charset=UTF-8")
+    public Map getDataBaseName() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			String URL = "jdbc:sqlserver://192.168.0.15:1433;DatabaseName=syntun_base";
+			List<String> list = DatabaseUtil.getDatabaseNames(URL);
+			if(list.size()>0){
+				result.put("list", list);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 根据database查询数据表列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getTableNames", produces = "application/json;charset=UTF-8")
+    public Map getTableNames(String database) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(database)){
+				String url = "jdbc:sqlserver://192.168.0.15:1433;DatabaseName="+database;
+				List<String> list = DatabaseUtil.getTableNames(url);
+				if(list.size()>0){
+					result.put("list", list);
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 根据database查询数据表列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getColumns", produces = "application/json;charset=UTF-8")
+    public Map getColumns(String database,String tableName) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			String url = "jdbc:sqlserver://192.168.0.15:1433;DatabaseName="+database;
+			List<String> list = DatabaseUtil.getColumnNames(tableName,url);
+			if(list.size()>0){
+				result.put("list", list);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    
+    /**
+     * 根据tableName查询字段列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getColumnNames", produces = "application/json;charset=UTF-8")
+    public Map getColumnNames(String database,String tableName,String flag) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			String url = "jdbc:sqlserver://192.168.0.15:1433;DatabaseName="+database;
+			List<String> list1 = DatabaseUtil.getColumnNames(tableName,url);
+			List<String> list = new ArrayList<>();
+			if(list1.size()>0){
+				for(String l:list1){
+					if("table1".equals(flag)){
+						list.add("a."+l);
+					}else{
+						list.add("b."+l);
+					}
+				}
+				result.put("list", list);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 生成sql语句
+     * @throws Exception 
+     */
+    @SysLogger(modelName = "生成SQL语句", methodType = "generateSql")
+    @ResponseBody
+    @RequestMapping(value = "/generateSql", produces = "application/json;charset=UTF-8")
+    public Map generateSql(String databaseName1,String databaseName2,String tableName,String tableName2,
+    		String tableColumn,String tableColumn2,String relationid,String whereid) {
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank("tableName") || StringUtils.isNotBlank("tableName2") || StringUtils.isNotBlank("tableColumn") || StringUtils.isNotBlank("tableColumn2") || StringUtils.isNotBlank("relationid")){
+		        //sql存储
+		        StringBuilder sqlSb = new StringBuilder();
+		        sqlSb.append("SELECT ").append(tableColumn);
+		        if(StringUtils.isNotBlank(tableColumn2)){
+		            sqlSb.append(","+tableColumn2);
+		        }
+		        sqlSb.append(" FROM ").append(tableName+" a ").append(" LEFT JOIN ").append(tableName2+" b on ").append(relationid);
+		        if(StringUtils.isNotBlank(whereid)){
+		            sqlSb.append(" WHERE ").append(whereid);
+		        }
+		        //保存数据库
+		        DataRrocessingSql d = new DataRrocessingSql();
+		        d.setSqlname(sqlSb.toString());
+		        d.setDatabasename1(databaseName1);
+		        d.setDatabasename2(databaseName2);
+		        d.setTablename1(tableName);
+		        d.setTablename2(tableName2);
+		        d.setTablefield1(tableColumn);
+		        d.setTablefield2(tableColumn2);
+		        d.setRelationcondition(relationid);
+		        d.setWherecondition(whereid);
+		        DataSourceContextHolder.setDbType("ds_mop");
+		        int i = dataRrocessingSqlService.insert(d);
+		        if(i>0 || i==0){
+		        	result.put("sql", sqlSb);
+					result.put("code", "200");
+			        result.put("msg", "成功!");
+		        }
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 查询平台分类列表
+     * @param request
+     * @param response
+     * @throws Exception
+     */
+	@RequestMapping(value = "/getDataProcessingSqlInfo")
+	public void getDataProcessingSqlInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap params = new HashMap();
+		params.put("page",start);
+		params.put("limit",limit);
+		DataSourceContextHolder.setDbType("ds_mop");
+		int count = dataRrocessingSqlService.getTotal(params);
+		List<DataRrocessingSql> result = dataRrocessingSqlService.find(params);
+
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+	}
+    /**
+     * 苏宁分类
+     */
+    public static List<PlatformClassify> getSuning(String URL){
+    	List<PlatformClassify> ps = new ArrayList<>();
+        try {
+            Document doc = Jsoup.connect(URL).maxBodySize(0).get();
+            //分类标签
+            Elements liList = doc.select("div[class='search-main introduce clearfix']");
+            for (Element item : liList) {
+                List<Node> nodes = item.childNodes();
+                for(Node n:nodes){
+                    String aClass = n.attr("id");
+                    Elements item1 = item.select("div[id='"+aClass+"']");
+                    //一级名字
+                    String oneName = item1.select("h2").text();
+                    for (Element i : item1) {
+                        Elements select = i.select("div[class='title-box clearfix']");
+                        for(Element s:select){
+                            String twoName = s.select("div[class='t-left fl clearfix']").select("a").text();
+                            Elements select1 = s.select("div[class='t-right fl clearfix']").select("a");
+                            for(Element s1:select1){
+                                String threeURL = s1.select("a").attr("href");
+                                String threeName = s1.select("a").text();
+                                String[] split = threeURL.split("-");
+                                String threeId = split[1];
+                                //插入数据对象
+                                PlatformClassify p = new PlatformClassify();
+                                p.setPlatformid("4");
+                                p.setPlatformname("苏宁分类");
+                                p.setThreecategoryurl("https:"+threeURL);
+                                p.setOnecategoryname(oneName);//一级分类名称
+                                p.setTwocategoryname(twoName);//二级分类名称
+                                p.setThreecategoryname(threeName);//三级分类名称
+                                p.setThreecategoryid(threeId);//三级分类id
+                                if(StringUtils.isNotBlank(threeId)){
+                                	ps.add(p);
+                                }
+                                //System.out.println("一级分类名称："+oneName+" 二级分类名称："+twoName+" 三级分类名称："+threeName+" 三级分类URL："+threeURL+" 三级分类id："+threeId);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ps;
+    }
+
+    /**
+     * 获取指定url中的某个参数
+     * @param url
+     * @param name
+     * @return
+     */
+    public static String getParamByUrl(String url, String name) {
+        url += "&";
+        String pattern = "(\\?|&){1}#{0,1}" + name + "=[a-zA-Z0-9]*(&{1})";
+        Pattern r = Pattern.compile(pattern);
+        Matcher m = r.matcher(url);
+        if (m.find()) {
+            //System.out.println(m.group(0));
+            return m.group(0).split("=")[1].replace("&", "");
+        } else {
+            return "";
+        }
+    }
+    /**
+     * 淘宝分类
+     */
+    public static List<PlatformClassify> getTaobao(String URL){
+    	List<PlatformClassify> ps = new ArrayList<>();
+        try {
+            Document doc = Jsoup.connect(URL).maxBodySize(0).get();
+            //分类标签
+            Elements liList = doc.select("div[class='home-category-list J_Module']");
+            for (Element item : liList) {
+                //一级分类名称
+                String oneName = item.select("a[class='category-name category-name-level1 J_category_hash']").text();
+                Elements li = item.select("ul[class='category-list']").select("li");
+                for (Element l : li) {
+                    String twoName = l.selectFirst("a").text();
+                    Elements select = l.select("div[class='category-items']").select("a");
+                    for (Element s : select) {
+                        String threeName = s.select("a").text();
+                        String threeURL = s.select("a").attr("href");
+                        String threeId = "";
+                        if(threeURL.contains("cat")){
+                            threeId = getParamByUrl(threeURL, "cat");
+                        }
+                        //插入数据对象
+                        PlatformClassify p = new PlatformClassify();
+                        p.setPlatformid("1");
+                        p.setPlatformname("淘宝分类");
+                        p.setThreecategoryurl("https:"+threeURL);
+                        p.setOnecategoryname(oneName);//一级分类名称
+                        p.setTwocategoryname(twoName);//二级分类名称
+                        p.setThreecategoryname(threeName);//三级分类名称
+                        p.setThreecategoryid(threeId);//三级分类id
+                        if(StringUtils.isNotBlank(threeId)){
+                        	ps.add(p);
+                        }
+                        //System.out.println("一级分类名称："+oneName+" 二级分类名称："+twoName+" 三级分类名称："+threeName+" 三级分类URL："+threeURL+" 三级分类id："+threeId);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ps;
+    }
+    /**
+     * 国美分类
+     */
+    public static List<PlatformClassify> getGome(String URL){
+    	List<PlatformClassify> ps = new ArrayList<>();
+        try {
+            Document doc = Jsoup.connect(URL).maxBodySize(0).get();
+            //分类标签
+            Elements liList = doc.select("div[class='item_wrap']").select("div[class='item']");
+            for (Element item : liList) {
+                //一级分类名称
+                String oneName = item.select("div[class='item']").select("h2").text();
+                Elements ul = item.select("ul");
+                for (Element u : ul) {
+                    Elements li = u.select("li");
+                    for (Element l : li) {
+                        String twoName = l.select("p").text();
+                        Elements select = l.select("div[class='nav_list']").select("a");
+                        for (Element s : select) {
+                            String threeName = s.select("a").text();
+                            String threeURL = s.select("a").attr("href");
+                            List<String> url = getUrl(threeURL);
+                            String threeId = url.get(0);
+                            //插入数据对象
+                            PlatformClassify p = new PlatformClassify();
+                            p.setPlatformid("3");
+                            p.setPlatformname("国美分类");
+                            p.setThreecategoryurl("https:"+threeURL);
+                            p.setOnecategoryname(oneName);//一级分类名称
+                            p.setTwocategoryname(twoName);//二级分类名称
+                            p.setThreecategoryname(threeName);//三级分类名称
+                            p.setThreecategoryid(threeId);//三级分类id
+                            if(StringUtils.isNotBlank(threeId)){
+                            	ps.add(p);
+                            }
+                            //System.out.println("一级分类名称："+oneName+" 二级分类名称："+twoName+" 三级分类名称："+threeName+" 三级分类URL："+threeURL+" 三级分类id："+threeId);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ps;
+    }
+    /**
+     * 京东平台分类
+     * @param URL
+     */
+    public static List<PlatformClassify> getJidong(String URL){
+        Document doc = null;
+        List<PlatformClassify> ps = new ArrayList<>();
+        try {
+            doc = Jsoup.connect(URL).maxBodySize(0).get();
+            //分类标签
+            Elements liList = doc.select("div[class='col']");
+            //循环liList的数据
+            for (Element item : liList) {
+                //分类标签下子分类标签
+                Elements liList2 = item.select("div[class='category-item m']");
+                for (Element item2 : liList2) {
+                    //一级分类名称
+                    String one = item2.select("div[class='mt']").select("span").text();
+                    //二级分类标签
+                    Elements liList3 = item2.select("div[class='mc']").select("dl[class='clearfix']");
+                    for (Element item3 : liList3) {
+                        //二级分类名称
+                        String two = item3.select("dt").select("a").text();
+                        //三级分类标签
+                        Elements liList4 = item3.select("dd").select("a");
+                        for (Element item4 : liList4) {
+                            //三级分类名称
+                            String threeName = item4.select("a").text();
+                            //三级分类URL
+                            String threeUrl = item4.select("a").attr("href");
+                            List<String> url1 = new ArrayList<>();
+                            //插入数据对象
+                            PlatformClassify p = new PlatformClassify();
+                            p.setPlatformid("2");
+                            p.setPlatformname("京东平台");
+                            p.setThreecategoryurl("https:"+threeUrl);
+                            //包含参数一级分类id，二级分类id，三级分类id
+                            if(threeUrl.contains("?")){
+                                p.setOnecategoryname(one);//一级分类名称
+                                p.setTwocategoryname(two);//二级分类名称
+                                p.setThreecategoryname(threeName);//三级分类名称
+                                url1 = getUrl(threeUrl);
+                                //System.out.println("一级分类名称："+one+" 二级分类名称："+two+" 三级分类名称："+threeName+" 三级分类URL："+threeUrl+" 三级分类id："+url1);
+                                if(url1.size()>0){
+                                    for(int i=0;i<url1.size();i++){
+                                        if(i==0){
+                                            //一级分类id
+                                            String oneClassid = url1.get(i);
+                                            if(StringUtils.isNotBlank(oneClassid)){
+                                                p.setOnecategoryid(oneClassid);
+                                            }
+                                        }else if(i==1){
+                                            //二级分类id
+                                            String twoClassid = url1.get(i);
+                                            if(StringUtils.isNotBlank(twoClassid)){
+                                                p.setTwocategoryid(twoClassid);
+                                            }
+                                        }else if(i==2){
+                                            //三级分类id
+                                            String threeClassid = url1.get(i);
+                                            if(StringUtils.isNotBlank(threeClassid)){
+                                                p.setThreecategoryid(threeClassid);
+                                            }
+                                        }
+                                    }
+                                }
+                                //有平台id才保存
+                                if(StringUtils.isNotBlank(p.getThreecategoryid())){
+                                	ps.add(p);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ps;
+    }
+    /**
+     * 查询mysql数据库列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/queryDataBaseName", produces = "application/json;charset=UTF-8")
+    public Map queryDataBaseName() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			//String URL = "jdbc:mysql://192.168.0.132:3306/xitong?useUnicode=true&amp;characterEncoding=utf8";
+			DataSourceContextHolder.setDbType("ds_mop");
+			List<String> list = platformClassifyService.getBydatabase();
+			if(list.size()>0){
+				result.put("list", list);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 根据database查询数据表列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/queryTableNames", produces = "application/json;charset=UTF-8")
+    public Map queryTableNames(String database) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			if(StringUtils.isNotBlank(database)){
+				//String url = "jdbc:mysql://192.168.0.132:3306/"+database+"?useUnicode=true&amp;characterEncoding=utf8";
+				DataSourceContextHolder.setDbType("ds_mop");
+				List<String> list = platformClassifyService.getBytable(database);
+				if(list.size()>0){
+					result.put("list", list);
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     * 根据tableName查询字段列表
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/queryColumnNames", produces = "application/json;charset=UTF-8")
+    public Map queryColumnNames(String database,String tableName,String tableWhere){
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        Object jsons = "";
+		try {
+			String tablename = (database+"."+tableName);
+			HBaseUtils dao = new HBaseUtils();
+			//productid 反转
+			tableWhere = new StringBuilder(tableWhere).reverse().toString();
+			List<Result> results = dao.getColumns("CRAWLERSYSTEMDATA",tableWhere,tablename);
+			if(results.size()>0){
+				Result rsResult = results.get(0);
+				List<String> columns = new ArrayList<>();
+				for (Cell cell : rsResult.rawCells()){
+					//获取列
+					String cloumn = new String(CellUtil.cloneQualifier(cell));
+					columns.add(cloumn);
+				}
+				result.put("columns", columns);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+    }
+    /**
+     * 根据tableName查询表信息
+     * @throws Exception 
+     */
+    @RequestMapping(value = "/queryTableData", produces = "application/json;charset=UTF-8")
+    public void queryTableData(String database,String tableName,String tableWhere,HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        Object jsons = "";
+		try {
+/*			result.put("tablename", tableName);//根据表名查询表字段
+			List<WebsiteTable> websiteTable = platformClassifyService.findWebsiteTable(result);
+			String url = "jdbc:mysql://192.168.0.132:3306/"+database+"?useUnicode=true&amp;characterEncoding=utf8";
+			List<HashMap<String,String>> list1 = MysqlDatabaseUtil.getTableData(tableName,url,websiteTable.get(0).getTablecolumn(),tableWhere);*/
+			String tablename = (database+"."+tableName);
+			//查询hbase数据
+			List<HashMap<String,String>> list1 = new ArrayList<HashMap<String,String>>();
+			HBaseUtils dao = new HBaseUtils();
+			//productid 反转
+			tableWhere = new StringBuilder(tableWhere).reverse().toString();
+			List<Result> results = dao.getColumn("CRAWLERSYSTEMDATA","in","product_id",tableWhere,tablename);
+			if(results.size()>0){
+				List<String> columns = new ArrayList<>();
+				for (Result rsResult : results) {
+					HashMap<String,String> m = new HashMap<String,String>();
+					for (Cell cell : rsResult.rawCells()){
+						String cloumn = new String(CellUtil.cloneQualifier(cell));
+						String cloumnValue = new String(CellUtil.cloneValue(cell),"UTF-8");
+						m.put(cloumn, cloumnValue);
+					}
+					list1.add(m);
+				}
+				result.put("columns", columns);
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+			
+			ResultJson resultJson = new ResultJson();
+	    	resultJson.setCode(0);
+	    	resultJson.setMsg("");
+	    	resultJson.setCount(list1.size());
+	    	resultJson.setData(list1);
+			jsons = JSONObject.fromObject(resultJson);
+			
+			result.put("list", list1);
+	        result.put("code", "200");
+	        result.put("msg", "成功!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		response.getWriter().print(jsons.toString());
+    }
+}

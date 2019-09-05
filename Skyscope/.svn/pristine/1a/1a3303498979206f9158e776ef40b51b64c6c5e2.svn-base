@@ -1,0 +1,109 @@
+package com.syntun.inspect;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+
+import com.syntun.etl.tools.ConvertSql;
+
+public class ComputeManzhe {
+	
+	public static HashMap<String, Double> reduceManzhe(HashMap<String, Double> priceMap, 
+			List<HashMap<String, String>> MZpromotionMap, HashMap<String, String> key, String userId) throws IOException {
+		HashMap<String, Double> MZpriceMap = new HashMap<String, Double>();
+		double tempPrice = priceMap.get("tempPrice");
+		double maxPrice = priceMap.get("maxPrice");
+		//计算促销用的价格
+		double priceTemp = tempPrice;
+		double promotionTemp = 0;
+		// 从非促销价的促销内容中计算促销价
+		for (HashMap<String, String> m : MZpromotionMap) {
+			//满折的价格
+			double temp = getMZPrice(tempPrice, m, key, userId);
+			if (promotionTemp == 0) {
+				promotionTemp = temp;
+			} else {
+				if (temp != 0) {
+					promotionTemp = promotionTemp > temp ? temp : promotionTemp;
+				}
+			}
+		}
+		// 如果促销价大于价格，交换促销价和价格
+		if (promotionTemp > priceTemp) {
+			double temProPri = priceTemp;
+			priceTemp = promotionTemp;
+			promotionTemp = temProPri;
+		}
+		
+		MZpriceMap.put("tempPrice", promotionTemp);
+		MZpriceMap.put("maxPrice", maxPrice);
+		return MZpriceMap;
+	}
+	
+	/*
+	 * 满折计算
+	 */
+	public static Double getMZPrice(double tempPrice, HashMap<String, String> promotion, HashMap<String,String> key, String userId) {
+		double endPrice = 0;
+		//String platFormId = key.get("platForm_id");
+		HashMap<String, String> ZKValMap = new HashMap<String, String>();
+		
+		//String promotionTypeInfo = replacePromotionInfo(promotion.get("promotion_type_info"));
+		String promotionTypeInfo = promotion.get("promotion_type_info");
+		boolean isPromotion = false;
+		for (HashMap<String, String> map : DataSelection.promotionMZ) {
+			// 合生元用户100693，最大折
+			if (userId.equals("100693") && map.get("promotion_info") != null && map.get("promotion_info").equals(promotionTypeInfo)) {
+				isPromotion = true;
+				endPrice = tempPrice * Double.parseDouble(map.get("max"));
+			}
+			if (!userId.equals("100693") && map.get("promotion_info") != null && map.get("promotion_info").equals(promotionTypeInfo)) {
+				isPromotion = true;
+				endPrice = tempPrice * Double.parseDouble(map.get("值"));
+			}
+		}
+		if(!isPromotion){
+			endPrice = tempPrice;
+			ZKValMap.put("promotion_id", promotion.get("promotion_id"));
+			ZKValMap.put("product_id", promotion.get("product_id"));
+			ZKValMap.put("operation_id", promotion.get("operation_product_id"));
+			ZKValMap.put("promotion_type_name", promotion.get("promotion_type_name"));
+			ZKValMap.put("promotion_type_info", promotion.get("promotion_type_info"));
+			ZKValMap.put("get_data_date", promotion.get("get_date"));
+			ZKValMap.put("get_data_time", promotion.get("get_date") + " " + 
+					(promotion.get("hour").length() == 1 ? ("0" + promotion.get("hour")) : promotion.get("hour")) + 
+					":"+ (promotion.get("min").equals("15") ? "00" : "30") + ":00");
+			//ZKValMap.put("SKU_NAME", promotion.get(""));
+			ZKValMap.put("shop_name", promotion.get("shop_name"));
+			ZKValMap.put("min", promotion.get("min"));
+			ZKValMap.put("hour_1", promotion.get("hour"));
+			ZKValMap.put("shop_name_1", promotion.get("shop_name"));
+			ZKValMap.put("shop_code", promotion.get("shop_code"));
+			ZKValMap.put("sku_id", promotion.get("sku_id"));
+			ZKValMap.put("city_id", promotion.get("city_id"));
+			
+			String sql = ConvertSql.getSqlServer("[skyscope].[dbo].[折扣未处理_copy]", DataSelection.ZKFiledList, ZKValMap);
+			//System.out.println(priceLess.size() + "___" + sql);
+			SkyscopeInspect.ZKsql.add(sql);
+		}
+
+		return endPrice;
+	}
+	
+	/**
+	 * 替换方法，将满减促销中的数据进行替换，使数据进行统一化
+	 * 
+	 * @param str
+	 *            促销内容
+	 * @return
+	 */
+	public static String replacePromotionInfo(String str) {
+		String replacestr = str;
+		for (HashMap<String, String> map : DataSelection.promotionReplace) {
+			for (String key : map.keySet()) {
+				replacestr = replacestr.replace(key, map.get(key));
+			}
+		}
+		return replacestr;
+	}
+}

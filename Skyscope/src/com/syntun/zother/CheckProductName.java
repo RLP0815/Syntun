@@ -1,0 +1,177 @@
+package com.syntun.zother;
+
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import com.syntun.etl.tools.BaseDao;
+import com.syntun.etl.tools.BaseDaoSqlServer;
+import com.syntun.etl.tools.ConnectSql60;
+import com.syntun.etl.tools.ConnectSql73;
+import com.syntun.etl.tools.ConnectSqlServer16;
+import com.syntun.etl.tools.ConvertSql;
+import com.syntun.etl.tools.InsertData60;
+import com.syntun.etl.tools.SyntunDate;
+import com.syntun.util.GetSpecification;
+
+public class CheckProductName {
+	/**
+	 * 结果sql集合
+	 */
+	public static List<String> checkResult = new ArrayList<String>();
+	public static void main(String[] args) {
+		getResult();
+	}
+	public static void getResult() {
+		/**
+		 * 结果sql集合
+		 */
+		checkResult = new ArrayList<String>();
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+		String dayStr = df.format(new Date());
+		String dayStrJ = SyntunDate.jieDate(dayStr.split(" ")[0]);
+		Connection conn60 = ConnectSql60.getConn();
+		Connection conn73 = ConnectSql73.getConn();
+		Connection conn16 = ConnectSqlServer16.getConn();
+		// 
+		List<String> resultFiledList = BaseDao.getField("skyscope.product_name_out", conn60);
+		resultFiledList.remove("id");
+		List<String> keyList = new ArrayList<String>();
+		keyList.add("PRODUCT_ID");
+		// 读取标准名称
+		HashMap<String, String> productData = BaseDaoSqlServer.getProductData("[syntun_base].[dbo].[PRODUCT_LIST]",keyList, conn16);
+		// 
+		List<String> keyListst = new ArrayList<String>();
+		keyListst.add("operation_product_id");
+		keyListst.add("product_id");
+		// 读取抓取名称
+		HashMap<String, HashMap<String, String>> getProductData = BaseDao.getProductName("skyscope.product_name", keyListst, dayStr.split(" ")[0], conn60);	
+		
+		List<String> ruleValue = BaseDao.getRuleValueList("product_etl.nomodel_rule_field_value", conn73);
+		
+		ConnectSql60.push(conn60);
+		ConnectSql73.push(conn73);
+		ConnectSqlServer16.push(conn16);
+		
+		List<HashMap<String, String>> resultList = new ArrayList<HashMap<String, String>>();
+		//遍历采集产品名称
+		for(String k:getProductData.keySet()){
+			HashMap<String, String> resultMap = new HashMap<String, String>();
+			//String operationProductId = k.split("\001")[0];
+			String productId = k.split("\001")[1];
+			String getPrductName = getProductData.get(k).get("product_name");
+			//规格处理
+			HashMap<String, String> getProductNameMap = GetSpecification.getSpecification(getPrductName);
+			String getSpecificationEnd = getProductNameMap.get("specification_end").toLowerCase();
+			//如果规格数量是1（XXXg*1），则去掉*1；
+			if(getSpecificationEnd!=null && !getSpecificationEnd.equals("") && getSpecificationEnd.indexOf("*1")!=-1){
+				getSpecificationEnd = getProductNameMap.get("specification").toLowerCase();
+			}
+			String name = null;
+			int j = 0;
+			if(productData.containsKey(productId)){
+				String productName = productData.get(productId);
+				HashMap<String, String> productNameMap = GetSpecification.getSpecification(productName);
+				String specificationEnd = productNameMap.get("specification_end").toLowerCase();
+				for(int i=0; i<productName.split(" ").length; i++){
+					String st = productName.split(" ")[i];
+					String stLower = st.toLowerCase();
+					if((ruleValue.contains(stLower) || (specificationEnd!=null && !specificationEnd.equals("") && specificationEnd.equals(stLower)))
+							 && getPrductName.toLowerCase().indexOf(stLower)==-1){
+						//规格转换之后，包含此规格，则不作为统计列
+						if(getSpecificationEnd!=null && !getSpecificationEnd.equals("") && getSpecificationEnd.equals(stLower)){
+							continue;
+						}
+						//如果抓取的名称中没有规格，则标准名称的规格不做匹配
+						if((getSpecificationEnd==null || getSpecificationEnd.equals("")) && specificationEnd.equals(stLower)){
+							continue;
+						}
+						//如果是规格：规格中的ml和g之间统一；L和KG和ml做统一
+						if(specificationEnd!=null && !specificationEnd.equals("") && specificationEnd.equals(stLower)){
+							if(getSpecificationEnd!=null && !getSpecificationEnd.equals("")){
+								specificationEnd = specificationEnd.replace("ml", "g");
+								specificationEnd = specificationEnd.replace("l", "000g");
+								specificationEnd = specificationEnd.replace("kg", "000g");
+								getSpecificationEnd = getSpecificationEnd.replace("ml", "g");
+								getSpecificationEnd = getSpecificationEnd.replace("l", "000g");
+								getSpecificationEnd = getSpecificationEnd.replace("kg", "000g");
+								if(specificationEnd.equals(getSpecificationEnd)){
+									continue;
+								}
+							}
+						}
+						
+						if(j == 0){
+							name = st;
+						}else{
+							name = name + "," + st;
+						}
+						j+=1;
+					}
+				}
+				if(j!=0){
+					resultMap.put("standard_product_id", productId);
+					resultMap.put("standard_product_name", productName);
+					resultMap.put("operation_product_id", getProductData.get(k).get("operation_product_id"));
+					resultMap.put("product_id", getProductData.get(k).get("product_id"));
+					resultMap.put("product_name", getProductData.get(k).get("product_name"));
+					resultMap.put("platform_id", getProductData.get(k).get("platform_id"));
+					resultMap.put("shop_id", getProductData.get(k).get("shop_id"));
+					resultMap.put("sku_id", getProductData.get(k).get("sku_id"));
+					resultMap.put("city_id", getProductData.get(k).get("city_id"));
+					resultMap.put("get_data_time", getProductData.get(k).get("get_data_time"));
+					resultMap.put("out_product_name", name);
+					resultMap.put("out_num", j+"");
+					resultMap.put("check_data_time", dayStr);
+					resultList.add(resultMap);
+				}
+			}else{
+				resultMap.put("standard_product_id", "000000");
+				resultMap.put("standard_product_name", "标准库没有此产品名");
+				resultMap.put("operation_product_id", getProductData.get(k).get("operation_product_id"));
+				resultMap.put("product_id", getProductData.get(k).get("product_id"));
+				resultMap.put("product_name", getProductData.get(k).get("product_name"));
+				resultMap.put("platform_id", getProductData.get(k).get("platform_id"));
+				resultMap.put("shop_id", getProductData.get(k).get("shop_id"));
+				resultMap.put("sku_id", getProductData.get(k).get("sku_id"));
+				resultMap.put("city_id", getProductData.get(k).get("city_id"));
+				resultMap.put("get_data_time", getProductData.get(k).get("get_data_time"));
+				resultMap.put("out_product_name", getProductData.get(k).get("product_name"));
+				resultMap.put("out_num", j+"");
+				resultMap.put("check_data_time", dayStr);
+				resultList.add(resultMap);
+			}
+		}
+		
+		//遍历未匹配产品名称结果
+		if (resultList.size() != 0) {
+			for (HashMap<String, String> resultMap : resultList) {
+				
+				String sql = ConvertSql.getSql("skyscope.product_name_out", resultFiledList, resultMap);
+				checkResult.add(sql);
+			}
+		}
+		System.out.println("---标准名称检查错误数据条数： "+ checkResult.size() + " ===");
+		Thread t1 = new Thread(new InsertData60(checkResult));
+		t1.start();
+		boolean isAlice = true;
+		while(isAlice){
+			if(!t1.isAlive()){
+				isAlice = false;
+				try {
+					String text = "标准名称检查执行完成，请注意核查！ \n " + 
+							"标准名称检查错误数据条数：" + resultList.size();
+					System.out.println(text);
+					//String[] emails = {"liping.ren@syntun.com"};	
+					//SyntunEmail.sendSimpleEmail(emails, "标准名称检查", text, "b", "text");
+						
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+}

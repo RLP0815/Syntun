@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ProductStateDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="ProductState" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="platformId" column="platform_id" jdbcType="INTEGER" />
+    <result property="platformName" column="platform_name" jdbcType="VARCHAR" />
+    <result property="stateCode" column="state_code" jdbcType="INTEGER" />
+    <result property="productState" column="product_state" jdbcType="VARCHAR" />
+    <result property="errorConnect" column="error_connect" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectProductState" resultType="ProductState">
+    select * FROM product_state
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM product_state ORDER BY id DESC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM product_state
+    <if test="errorConnect != null" > where error_connect like CONCAT('%',#{errorConnect},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from product_state ORDER BY id DESC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from product_state where 1=1 
+     <if test="errorConnect != null" > and error_connect like CONCAT('%',#{errorConnect},'%') </if>
+      ORDER BY id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addFiled" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into product_state (platform_id, platform_name, state_code, product_state, error_connect)
+    	values (#{platformId}, 
+    		#{platformName}, 
+    		#{stateCode}, 
+    		#{productState}, 
+    		#{errorConnect})
+  </insert>
+  
+  <update id="editFiled" parameterType="java.util.Map">
+  	update product_state set platform_id = #{platformId}, 
+  		platform_name = #{platformName}, 
+  		state_code = #{stateCode}, 
+  		product_state = #{productState}, 
+  		error_connect = #{errorConnect} where id = #{id}
+  </update>
+  
+  <delete id="delFiled" parameterType="java.util.Map">
+  	delete from product_state where id = #{id}
+  </delete>
+  
+  <delete id="delAllFiled" parameterType="java.lang.Long">
+    delete from product_state where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

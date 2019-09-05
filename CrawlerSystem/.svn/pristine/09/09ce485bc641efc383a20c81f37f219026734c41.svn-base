@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.MeetingRoomDao" >
+  
+  <delete id="delete" parameterType="com.syntun.entity.MeetingRoom" >
+    delete from meeting_room where userid = #{userid} and dayid = #{dayid} and meetingroom = #{meetingroom} and meetingroomday = #{meetingroomday}
+  </delete>
+  
+  <insert id="insert" parameterType="com.syntun.entity.MeetingRoom" >
+    insert IGNORE into meeting_room (meetingroom,meetingroomday,dayid,userid,username,meetingtype) values 
+    (#{meetingroom},#{meetingroomday},#{dayid},#{userid},#{username},#{meetingtype})
+  </insert>
+  
+  <select id="find" parameterType="map" resultType="com.syntun.entity.MeetingRoom">
+     SELECT * FROM meeting_room WHERE 1=1
+     <if test="meetingroom!=null and meetingroom!=''">
+         AND meetingroom = #{meetingroom}
+     </if>
+     <if test="meetingroomday!=null and meetingroomday!=''">
+         AND meetingroomday = #{meetingroomday}
+     </if>
+     ORDER BY createtime desc
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM meeting_room WHERE 1=1
+ </select>
+  
+</mapper>

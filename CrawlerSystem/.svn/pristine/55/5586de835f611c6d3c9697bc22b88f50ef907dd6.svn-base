@@ -1,0 +1,337 @@
+package com.syntun.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.syntun.entity.Server;
+import com.syntun.service.ServerService;
+import com.syntun.util.PropertiesUtil;
+import com.syntun.util.RemoteShellExecutor;
+
+import net.sf.json.JSONArray;
+
+
+/**
+ * 命令
+ */
+@Controller
+@RequestMapping(value = "/command")
+public class CommandController {
+	
+    @Resource(name = "serverService")
+    ServerService serverService;
+	
+	PropertiesUtil util =PropertiesUtil.getInstance("./config/config.properties", true);
+	String ip = util.getPropertyValue("ip");
+	String name = util.getPropertyValue("name");
+	String password = util.getPropertyValue("password");
+	
+    /**
+     *单个服务启动
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/start", produces = "application/json;charset=UTF-8")
+    public Map start(String id) {
+
+        Map<String,String> result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        if(StringUtils.isNotBlank(id)){
+    		try {
+    			Server s = serverService.findone(Integer.parseInt(id));
+				RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+				// 执行*.sh  后面2个参数
+				Map map = executor.exec(s.getStartpath());
+			    String exec = map.get("ret").toString();
+			    String outStr = map.get("outStr").toString();
+			    if(exec.equals("0")){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+			    }
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+        }
+        return result;
+    }
+    /**
+     *单个服务停止
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/stop", produces = "application/json;charset=UTF-8")
+    public Map stop(String id) {
+
+        Map<String,String> result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+        if(StringUtils.isNotBlank(id)){
+    		try {
+    			Server s = serverService.findone(Integer.parseInt(id));
+				RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+				// 执行*.sh  后面2个参数
+				Map map = executor.exec(s.getStoppath());
+			    String exec = map.get("ret").toString();
+			    String outStr = map.get("outStr").toString();
+			    if(exec.equals("0")){
+			        result.put("code", "200");
+			        result.put("msg", "成功!");
+			    }
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+        }
+        return result;
+    }
+    /**
+     *一键启动
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/allStart", produces = "application/json;charset=UTF-8")
+    public Map allStart(String serverInfo) {
+
+        Map<String,String> result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(serverInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				for(Server s:list){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStartpath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    if(exec.equals("0")){
+				        result.put("code", "200");
+				        result.put("msg", "成功!");
+				    }
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *一键停止
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/allStop", produces = "application/json;charset=UTF-8")
+    public Map allStop(String serverInfo) {
+
+        Map<String,String> result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(serverInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				for(Server s:list){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStoppath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    if(exec.equals("0")){
+				        result.put("code", "200");
+				        result.put("msg", "成功!");
+				    }
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *查询所有服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getAll", produces = "application/json;charset=UTF-8")
+    public Map getAll() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			List<Server> serverInfo = serverService.findAll(result);
+			if(serverInfo.size()>0){
+				for(Server s:serverInfo){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStatepath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    //脚本执行成功
+				    if(exec.equals("0")){
+				    	//停止状态
+				    	if(outStr.equals("0")){
+				    		s.setState("0");
+				    	}
+				    }
+				}
+			}
+	        result.put("code", "200");
+	        result.put("msg", "成功!");
+	        result.put("serverInfo", serverInfo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *查询所有删除的服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/getAllDel", produces = "application/json;charset=UTF-8")
+    public Map getAllDel() {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			List<Server> serverInfo = serverService.findAllDel(result);
+			if(serverInfo.size()>0){
+				for(Server s:serverInfo){
+					RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+					// 执行*.sh  后面2个参数
+					Map map = executor.exec(s.getStatepath());
+				    String exec = map.get("ret").toString();
+				    String outStr = map.get("outStr").toString();
+				    //脚本执行成功
+				    if(exec.equals("0")){
+				    	//停止状态
+				    	if(outStr.equals("0")){
+				    		s.setState("0");
+				    	}
+				    }
+				}
+			}
+	        result.put("code", "200");
+	        result.put("msg", "成功!");
+	        result.put("serverInfo", serverInfo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        return result;
+    }
+    /**
+     *添加服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/addServer", produces = "application/json;charset=UTF-8")
+    public Map addServer(String ip,String name,String password,String startpath,String stoppath,String statepath) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			Server s = new Server();
+			s.setIp(ip);
+			s.setName(name);
+			s.setPassword(password);
+			s.setStartpath(startpath);
+			s.setStoppath(stoppath);
+			s.setStatepath(statepath);
+			int i = serverService.insert(s);
+			if(i>0){
+				RemoteShellExecutor executor = new RemoteShellExecutor(s.getIp(),s.getName(),s.getPassword());
+				// 执行*.sh  后面2个参数
+				Map map = executor.exec(s.getStatepath());
+			    String exec = map.get("ret").toString();
+			    String outStr = map.get("outStr").toString();
+			    //脚本执行成功
+			    if(exec.equals("0")){
+			    	//停止状态
+			    	if(outStr.equals("0")){
+			    		s.setState("0");
+			    	}
+			    }
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+		        result.put("serverInfo", s);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *删除服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/delServer", produces = "application/json;charset=UTF-8")
+    public Map delServer(String delServerInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(delServerInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				for(Server s:list){
+					Server s1 = new Server();
+					s1.setId(s.getId());
+					s1.setIsdel("1");
+					serverService.update(s1);
+				}
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+    /**
+     *恢复服务器
+     * @throws Exception 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/recoveryServer", produces = "application/json;charset=UTF-8")
+    public Map recoveryServer(String delServerInfo) {
+
+        Map result = new HashMap<>();
+        result.put("code", "500");
+        result.put("msg", "失败!");
+		try {
+			JSONArray jsonArray = JSONArray.fromObject(delServerInfo);//把String转换为json 
+			List<Server> list = JSONArray.toList(jsonArray,Server.class);
+			if(list.size()>0){
+				for(Server s:list){
+					Server s1 = new Server();
+					s1.setId(s.getId());
+					s1.setIsdel("0");
+					serverService.update(s1);
+				}
+		        result.put("code", "200");
+		        result.put("msg", "成功!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        return result;
+    }
+}

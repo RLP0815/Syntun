@@ -1,0 +1,257 @@
+layui.use(['element','form','layer','table','laytpl'], function(){
+	
+	var element = layui.element;
+	
+	var form = layui.form,
+        layer = parent.layer === undefined ? layui.layer : top.layer,
+        $ = layui.jquery,
+        laytpl = layui.laytpl,
+        table = layui.table;
+	
+	var AddData=[ {
+		"id": 1,
+		"column": "id",
+		"dataType": "int",
+		"length": "11",
+		"default": "",
+		"primaryKey": "T",
+		"notNull": "T",
+		"autoIncrement": "T",
+		"comment": "主键ID"
+    }];
+	table.render({
+		elem: '#tableColumn',
+		//url:'../../../json/tableColumn.json',
+		//toolbar: '#toolbarDemo',
+		//title: '用户数据表',
+	    page: false,
+	    limit:15,
+		cols: [[
+		        //{type:'numbers', },
+		        //{type: 'checkbox'},
+		        {field:'id', title:'', align:"center", width:40},
+		        {field:'column', title:'列名', align:"", edit:'text', width:150},
+		        //{field:'dataType', title:'数据类型', templet:'#selectDataType'},
+		        {field:'dataType', title:'数据类型', edit:'text', width:150},
+		        {field:'length', title:'长度', align:"", edit:'text', width:150},
+		        {field:'default', title:'默认值', align:"", edit:'text', width:150},
+		        {field:'primaryKey', title:'主键', align:"", width:80, templet:'#primaryKey', unresize:true},
+		        {field:'notNull', title:'非空', align:"", width:80, templet:'#notNull', unresize:true},
+		        {field:'autoIncrement', title:'自增', align:"", width:80, templet:'#autoIncrement', unresize:true},
+		        {field:'comment', title:'注释', align:"", edit:'text', width:210}
+		        ,{title: '操作', width:60, templet:'#bar',fixed:"right",align:"center"}
+		]],
+	    data:AddData
+	});
+	//监听删除按钮
+	table.on('tool(tableColumn)', function(obj){
+		if(obj.event === 'del'){
+			if(obj.data.id == 1){
+				alert("此行不可删除！");
+				return;
+			}
+			obj.del();
+		};
+	}); 
+	var i = 1;
+	$(".add").click(function(){
+		i = i+1;
+		if(i > 15){
+			alert("数据最大序号是15！！！\n请刷新页面，重新添加！");
+			return;
+		}
+		AddData = table.cache.tableColumn
+		var data1={
+				"id": i,
+				"column": "",
+				"dataType": "",
+				"length": "",
+				"default": "",
+				"primaryKey": "",
+				"notNull": "",
+				"autoIncrement": "",
+				"comment": ""
+		};
+		//AddData.unshift(data1);
+		AddData.push(data1);
+		table.reload('tableColumn',{
+			data : AddData
+		}); 
+	});
+	//监听行单击事件（双击事件为：rowDouble）
+	var rowId;
+	table.on('row(tableColumn)', function(obj){
+		var data = obj.data;
+		//alert(JSON.stringify(data.id));
+		rowId = data.id;
+		//alert(rowId);
+	});
+	
+	$("#dataType").change(function(){
+		var selected=$(this).children('option:selected').val();
+		alert(rowId+":"+selected);
+	      
+	});
+//	form.on('select(dataType)', function(obj){
+//		top.layer.msg("000"); 
+////		top.layer.msg(data.elem); //得到select原始DOM对象
+////		top.layer.msg(data.value); //得到被选中的值
+////		top.layer.msg(data.othis); //得到美化后的DOM对象
+//	});
+	
+	//监听是否主键操作
+	var pk1="1T",pk2="2F",pk3="3F",pk4="4F",pk5="5F",pk6="6F",pk7="7F",pk8="8F",pk9="9F",pk10="10F",pk11="11F",pk12="12F",pk13="13F",pk14="14F",pk15="15F";
+	var pkv = pk1+","+pk2+","+pk3+","+pk4+","+pk5+","+pk6+","+pk7+","+pk8+","+pk9+","+pk10+","+pk11+","+pk12+","+pk13+","+pk14+","+pk15;
+	form.on('checkbox(primaryKey)', function(obj){
+		//top.layer.msg(this.value + ' ' + this.name + '：'+ obj.elem.checked);
+		if(obj.elem.checked){
+			if(this.value == 1){ pk1="1T"; }
+			if(this.value == 2){ pk2="2T"; }
+			if(this.value == 3){ pk3="3T"; }
+			if(this.value == 4){ pk4="4T"; }
+			if(this.value == 5){ pk5="5T"; }
+			if(this.value == 6){ pk6="6T"; }
+			if(this.value == 7){ pk7="7T"; }
+			if(this.value == 8){ pk8="8T"; }
+			if(this.value == 9){ pk9="9T"; }
+			if(this.value == 10){ pk10="10T"; }
+			if(this.value == 11){ pk11="11T"; }
+			if(this.value == 12){ pk12="12T"; }
+			if(this.value == 13){ pk13="13T"; }
+			if(this.value == 14){ pk14="14T"; }
+			if(this.value == 15){ pk15="15T"; }
+		}
+		if(!obj.elem.checked){
+			if(this.value == 1){ pk1="1F"; }
+			if(this.value == 2){ pk2="2F"; }
+			if(this.value == 3){ pk3="3F"; }
+			if(this.value == 4){ pk4="4F"; }
+			if(this.value == 5){ pk5="5F"; }
+			if(this.value == 6){ pk6="6F"; }
+			if(this.value == 7){ pk7="7F"; }
+			if(this.value == 8){ pk8="8F"; }
+			if(this.value == 9){ pk9="9F"; }
+			if(this.value == 10){ pk10="10F"; }
+			if(this.value == 11){ pk11="11F"; }
+			if(this.value == 12){ pk12="12F"; }
+			if(this.value == 13){ pk13="13F"; }
+			if(this.value == 14){ pk14="14F"; }
+			if(this.value == 15){ pk15="15F"; }
+		}
+		pkv = pk1+","+pk2+","+pk3+","+pk4+","+pk5+","+pk6+","+pk7+","+pk8+","+pk9+","+pk10+","+pk11+","+pk12+","+pk13+","+pk14+","+pk15;
+		//top.layer.msg(pkv);
+	});
+	//监听是否非空操作
+	var nn1="1T",nn2="2F",nn3="3F",nn4="4F",nn5="5F",nn6="6F",nn7="7F",nn8="8F",nn9="9F",nn10="10F",nn11="11F",nn12="12F",nn13="13F",nn14="14F",nn15="15F";
+	var nnv = nn1+","+nn2+","+nn3+","+nn4+","+nn5+","+nn6+","+nn7+","+nn8+","+nn9+","+nn10+","+nn11+","+nn12+","+nn13+","+nn14+","+nn15;
+	form.on('checkbox(notNull)', function(obj){
+		//top.layer.msg(this.value + ' ' + this.name + '：'+ obj.elem.checked);
+		if(obj.elem.checked){
+			if(this.value == 1){ nn1="1T"; }
+			if(this.value == 2){ nn2="2T"; }
+			if(this.value == 3){ nn3="3T"; }
+			if(this.value == 4){ nn4="4T"; }
+			if(this.value == 5){ nn5="5T"; }
+			if(this.value == 6){ nn6="6T"; }
+			if(this.value == 7){ nn7="7T"; }
+			if(this.value == 8){ nn8="8T"; }
+			if(this.value == 9){ nn9="9T"; }
+			if(this.value == 10){ nn10="10T"; }
+			if(this.value == 11){ nn11="11T"; }
+			if(this.value == 12){ nn12="12T"; }
+			if(this.value == 13){ nn13="13T"; }
+			if(this.value == 14){ nn14="14T"; }
+			if(this.value == 15){ nn15="15T"; }
+		}
+		if(!obj.elem.checked){
+			if(this.value == 1){ nn1="1F"; }
+			if(this.value == 2){ nn2="2F"; }
+			if(this.value == 3){ nn3="3F"; }
+			if(this.value == 4){ nn4="4F"; }
+			if(this.value == 5){ nn5="5F"; }
+			if(this.value == 6){ nn6="6F"; }
+			if(this.value == 7){ nn7="7F"; }
+			if(this.value == 8){ nn8="8F"; }
+			if(this.value == 9){ nn9="9F"; }
+			if(this.value == 10){ nn10="10F"; }
+			if(this.value == 11){ nn11="11F"; }
+			if(this.value == 12){ nn12="12F"; }
+			if(this.value == 13){ nn13="13F"; }
+			if(this.value == 14){ nn14="14F"; }
+			if(this.value == 15){ nn15="15F"; }
+		}
+		nnv = nn1+","+nn2+","+nn3+","+nn4+","+nn5+","+nn6+","+nn7+","+nn8+","+nn9+","+nn10+","+nn11+","+nn12+","+nn13+","+nn14+","+nn15;
+
+	});
+	//监听是否自增操作
+	var ai1="1T",ai2="2F",ai3="3F",ai4="4F",ai5="5F",ai6="6F",ai7="7F",ai8="8F",ai9="9F",ai10="10F",ai11="11F",ai12="12F",ai13="13F",ai14="14F",ai15="15F";
+	var aiv = ai1+","+ai2+","+ai3+","+ai4+","+ai5+","+ai6+","+ai7+","+ai8+","+ai9+","+ai10+","+ai11+","+ai12+","+ai13+","+ai14+","+ai15;
+	form.on('checkbox(autoIncrement)', function(obj){
+		if(obj.elem.checked){
+			if(this.value == 1){ ai1="1T"; }
+			if(this.value == 2){ ai2="2T"; }
+			if(this.value == 3){ ai3="3T"; }
+			if(this.value == 4){ ai4="4T"; }
+			if(this.value == 5){ ai5="5T"; }
+			if(this.value == 6){ ai6="6T"; }
+			if(this.value == 7){ ai7="7T"; }
+			if(this.value == 8){ ai8="8T"; }
+			if(this.value == 9){ ai9="9T"; }
+			if(this.value == 10){ ai10="10T"; }
+			if(this.value == 11){ ai11="11T"; }
+			if(this.value == 12){ ai12="12T"; }
+			if(this.value == 13){ ai13="13T"; }
+			if(this.value == 14){ ai14="14T"; }
+			if(this.value == 15){ ai15="15T"; }
+		}
+		if(!obj.elem.checked){
+			if(this.value == 1){ ai1="1F"; }
+			if(this.value == 2){ ai2="2F"; }
+			if(this.value == 3){ ai3="3F"; }
+			if(this.value == 4){ ai4="4F"; }
+			if(this.value == 5){ ai5="5F"; }
+			if(this.value == 6){ ai6="6F"; }
+			if(this.value == 7){ ai7="7F"; }
+			if(this.value == 8){ ai8="8F"; }
+			if(this.value == 9){ ai9="9F"; }
+			if(this.value == 10){ ai10="10F"; }
+			if(this.value == 11){ ai11="11F"; }
+			if(this.value == 12){ ai12="12F"; }
+			if(this.value == 13){ ai13="13F"; }
+			if(this.value == 14){ ai14="14F"; }
+			if(this.value == 15){ ai15="15F"; }
+		}
+		aiv = ai1+","+ai2+","+ai3+","+ai4+","+ai5+","+ai6+","+ai7+","+ai8+","+ai9+","+ai10+","+ai11+","+ai12+","+ai13+","+ai14+","+ai15;
+		
+	});
+  
+  //添加表格
+	var tableName = "";
+	form.on("submit(addTable)",function(data){
+		//弹出loading
+		tableName = $(".tableName").val();
+		if(tableName == ""){
+			alert("请输入表名！");
+			return false;
+		}else{
+			layer.confirm('确定新建表格？', {icon: 3, title: '提示信息'}, function (index) {
+				$.post($("#ctx").attr("value") + '/dataTableFiled/addTable.ht',{
+					tableName : tableName,
+					columns : JSON.stringify(table.cache.tableColumn),
+					pkValue : pkv,
+					nnValue : nnv,
+					aiValue : aiv
+				},function(res){
+					layer.close(index);
+					if(JSON.parse(res).code == 0){ 
+						top.layer.msg(JSON.parse(res).msg); 
+			        }else{
+			        	alert(JSON.parse(res).msg); 
+			        } 
+				})
+			});
+		}
+		return false;
+	});
+  
+});

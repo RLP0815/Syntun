@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.DataRrocessingSqlDao" >
+  <resultMap id="BaseResultMap" type="com.syntun.entity.DataRrocessingSql" >
+    <id column="sqlname" property="sqlname" jdbcType="VARCHAR" />
+    <result column="databasename1" property="databasename1" jdbcType="VARCHAR" />
+    <result column="databasename2" property="databasename2" jdbcType="VARCHAR" />
+    <result column="tablename1" property="tablename1" jdbcType="VARCHAR" />
+    <result column="tablename2" property="tablename2" jdbcType="VARCHAR" />
+    <result column="tablefield1" property="tablefield1" jdbcType="VARCHAR" />
+    <result column="tablefield2" property="tablefield2" jdbcType="VARCHAR" />
+    <result column="relationcondition" property="relationcondition" jdbcType="VARCHAR" />
+    <result column="wherecondition" property="wherecondition" jdbcType="VARCHAR" />
+    <result column="createtime" property="createtime" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    sqlname, databasename1, databasename2, tablename1, tablename2, tablefield1, tablefield2, 
+    relationcondition, wherecondition, createtime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String" >
+    select 
+    <include refid="Base_Column_List" />
+    from data_processing_sql
+    where sqlname = #{sqlname,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from data_processing_sql
+    where sqlname = #{sqlname,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="com.syntun.entity.DataRrocessingSql" >
+    insert IGNORE into data_processing_sql (sqlname, databasename1, databasename2, 
+      tablename1, tablename2, tablefield1, 
+      tablefield2, relationcondition, wherecondition)
+    values (#{sqlname,jdbcType=VARCHAR}, #{databasename1,jdbcType=VARCHAR}, #{databasename2,jdbcType=VARCHAR}, 
+      #{tablename1,jdbcType=VARCHAR}, #{tablename2,jdbcType=VARCHAR}, #{tablefield1,jdbcType=VARCHAR}, 
+      #{tablefield2,jdbcType=VARCHAR}, #{relationcondition,jdbcType=VARCHAR}, #{wherecondition,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.syntun.entity.DataRrocessingSql" >
+    insert into data_processing_sql
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="sqlname != null" >
+        sqlname,
+      </if>
+      <if test="databasename1 != null" >
+        databasename1,
+      </if>
+      <if test="databasename2 != null" >
+        databasename2,
+      </if>
+      <if test="tablename1 != null" >
+        tablename1,
+      </if>
+      <if test="tablename2 != null" >
+        tablename2,
+      </if>
+      <if test="tablefield1 != null" >
+        tablefield1,
+      </if>
+      <if test="tablefield2 != null" >
+        tablefield2,
+      </if>
+      <if test="relationcondition != null" >
+        relationcondition,
+      </if>
+      <if test="wherecondition != null" >
+        wherecondition,
+      </if>
+      <if test="createtime != null" >
+        createtime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="sqlname != null" >
+        #{sqlname,jdbcType=VARCHAR},
+      </if>
+      <if test="databasename1 != null" >
+        #{databasename1,jdbcType=VARCHAR},
+      </if>
+      <if test="databasename2 != null" >
+        #{databasename2,jdbcType=VARCHAR},
+      </if>
+      <if test="tablename1 != null" >
+        #{tablename1,jdbcType=VARCHAR},
+      </if>
+      <if test="tablename2 != null" >
+        #{tablename2,jdbcType=VARCHAR},
+      </if>
+      <if test="tablefield1 != null" >
+        #{tablefield1,jdbcType=VARCHAR},
+      </if>
+      <if test="tablefield2 != null" >
+        #{tablefield2,jdbcType=VARCHAR},
+      </if>
+      <if test="relationcondition != null" >
+        #{relationcondition,jdbcType=VARCHAR},
+      </if>
+      <if test="wherecondition != null" >
+        #{wherecondition,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        #{createtime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.syntun.entity.DataRrocessingSql" >
+    update data_processing_sql
+    <set >
+      <if test="databasename1 != null" >
+        databasename1 = #{databasename1,jdbcType=VARCHAR},
+      </if>
+      <if test="databasename2 != null" >
+        databasename2 = #{databasename2,jdbcType=VARCHAR},
+      </if>
+      <if test="tablename1 != null" >
+        tablename1 = #{tablename1,jdbcType=VARCHAR},
+      </if>
+      <if test="tablename2 != null" >
+        tablename2 = #{tablename2,jdbcType=VARCHAR},
+      </if>
+      <if test="tablefield1 != null" >
+        tablefield1 = #{tablefield1,jdbcType=VARCHAR},
+      </if>
+      <if test="tablefield2 != null" >
+        tablefield2 = #{tablefield2,jdbcType=VARCHAR},
+      </if>
+      <if test="relationcondition != null" >
+        relationcondition = #{relationcondition,jdbcType=VARCHAR},
+      </if>
+      <if test="wherecondition != null" >
+        wherecondition = #{wherecondition,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        createtime = #{createtime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where sqlname = #{sqlname,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.syntun.entity.DataRrocessingSql" >
+    update data_processing_sql
+    set databasename1 = #{databasename1,jdbcType=VARCHAR},
+      databasename2 = #{databasename2,jdbcType=VARCHAR},
+      tablename1 = #{tablename1,jdbcType=VARCHAR},
+      tablename2 = #{tablename2,jdbcType=VARCHAR},
+      tablefield1 = #{tablefield1,jdbcType=VARCHAR},
+      tablefield2 = #{tablefield2,jdbcType=VARCHAR},
+      relationcondition = #{relationcondition,jdbcType=VARCHAR},
+      wherecondition = #{wherecondition,jdbcType=VARCHAR},
+      createtime = #{createtime,jdbcType=TIMESTAMP}
+    where sqlname = #{sqlname,jdbcType=VARCHAR}
+  </update>
+  
+  <select id="find" parameterType="map" resultType="com.syntun.entity.DataRrocessingSql">
+     SELECT * FROM data_processing_sql WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     ORDER BY createtime desc
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM data_processing_sql WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+ </select>
+</mapper>

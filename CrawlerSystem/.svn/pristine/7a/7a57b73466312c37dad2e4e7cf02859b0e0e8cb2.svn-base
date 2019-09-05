@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>   
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">  
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/"  debug="false">  
+	  
+	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">  
+		<layout class="org.apache.log4j.PatternLayout">  
+			<param name="ConversionPattern" value="[%d{dd/MM/yy hh:mm:ss:sss z}] %5p %c{2}: %m%n" />  
+		</layout>  
+	</appender>  
+  
+<!--     
+	RollingFileAppender跟FileAppender的基本用法一样。但RollingFileAppender可以设置log文件的size（单位：KB/MB/GB）上限、数量上限，
+当log文件超过设置的size上限，会自动被压缩。RollingFileAppender可以理解为滚动输出日志，如果log4j 2记录的日志达到上限，旧的日志将被删除，
+腾出的空间用于记录新的日志，DefaultRolloverStrategy 标签的max设置压缩文件的上限（默认值为7）。
+layout有以下几种:
+org.apache.log4j.HTMLLayout(以HTML表格形式布局)
+org.apache.log4j.SimpleLayout(包含日志讯息的级别和讯息字符串)
+org.apache.log4j.TTCCLayout(包含日志产生的时间、执行绪、类别等讯息)
+org.apache.log4j.PatterLayout(可以灵活地指定布局格式)
+-->  
+<!-- 	<appender name="FILE" class="org.apache.log4j.RollingFileAppender">  -->
+<!--         <param name="file" value="${user.home}/foss-framework.log" /> -->  
+<!--         <param name="append" value="true" /> -->  
+<!--         <param name="maxFileSize" value="10MB" /> -->  
+<!--         <param name="maxBackupIndex" value="100" /> -->  
+<!--         <layout class="org.apache.log4j.PatternLayout"> -->  
+<!--             <param name="ConversionPattern" value="%d [%t] %-5p %C{6} (%F:%L) - %m%n" /> -->  
+<!--         </layout> -->  
+<!--     </appender> -->  
+  
+<!--     <appender name="framework" -->  
+<!--         class="com.deppon.foss.framework.server.components.logger.BufferedAppender"> -->  
+<!--         <layout class="org.apache.log4j.PatternLayout"> -->  
+<!--             <param name="ConversionPattern" value="[%d{dd/MM/yy hh:mm:ss:sss z}] %5p %c{2}: %m%n" /> -->  
+<!--         </layout> -->  
+<!--     </appender> -->  
+  
+	<!-- 下面是打印 mybatis语句的配置 -->  
+	<logger name="com.ibatis" additivity="true">  
+		<level value="INFO" />  
+	</logger>  
+  
+	<logger name="java.sql.Connection" additivity="true">  
+		<level value="INFO" />  
+	</logger>  
+  
+	<logger name="java.sql.Statement" additivity="true">  
+		<level value="INFO" />  
+	</logger>  
+  
+	<logger name="java.sql.PreparedStatement" additivity="true">  
+		<level value="INFO" />  
+	</logger>  
+  
+	<logger name="java.sql.ResultSet" additivity="true">  
+		<level value="INFO" />  
+	</logger>  
+  
+	<root>  
+		<level value="INFO" />  
+		<appender-ref ref="CONSOLE" />  
+<!--         <appender-ref ref="FILE" /> -->  
+<!--         <appender-ref ref="framework" /> -->  
+	</root>  
+</log4j:configuration>   

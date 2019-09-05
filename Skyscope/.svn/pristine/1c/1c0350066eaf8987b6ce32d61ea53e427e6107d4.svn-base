@@ -1,0 +1,95 @@
+package com.syntun.inspect;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+
+public class ComputeLingquan {
+
+	public static HashMap<String, Double> reduceLingquan(HashMap<String, Double> priceMap, 
+			List<HashMap<String, String>> LQpromotionMap, HashMap<String, String> key) throws IOException {
+		HashMap<String, Double> LQpriceMap = new HashMap<String, Double>();
+		double tempPrice = priceMap.get("tempPrice");
+		double maxPrice = priceMap.get("maxPrice");
+		
+		//计算促销用的价格
+		double priceTemp = tempPrice;
+		double promotionTemp = 0;
+		// 从非促销价的促销内容中计算促销价
+		for (HashMap<String, String> m : LQpromotionMap) {
+			//满减的价格
+			double temp = getLQPrice(tempPrice, m, key);
+			if (promotionTemp == 0) {
+				promotionTemp = temp;
+			} else {
+				if (temp != 0) {
+					promotionTemp = promotionTemp > temp ? temp : promotionTemp;
+				}
+			}
+		}
+		// 如果促销价大于价格，交换促销价和价格
+		if (promotionTemp > priceTemp) {
+			double temProPri = priceTemp;
+			priceTemp = promotionTemp;
+			promotionTemp = temProPri;
+		}
+		
+		LQpriceMap.put("tempPrice", promotionTemp);
+		LQpriceMap.put("maxPrice", maxPrice);
+		return LQpriceMap;
+	}
+	
+	/*
+	 * 满减计算
+	 */
+	public static Double getLQPrice(double tempPrice, HashMap<String, String> promotion, HashMap<String,String> key) {
+		double endPrice = 0;
+		//String platFormId = key.get("platForm_id");
+		
+		String promotionTypeInfo = replacePromotionInfo(promotion.get("promotion_type_info"));
+		double man = 0;
+		double jian = 0;
+		boolean isFirst = true;
+		for (HashMap<String, String> map : DataSelection.promotionMJ) {
+			
+			if (map.get("promotion_type_info") != null && map.get("promotion_type_info").equals(promotionTypeInfo)) {
+				// 符合满减的情况
+				if(isFirst && tempPrice >= Double.parseDouble(map.get("满"))
+						&& man == 0){
+					isFirst = false;
+					man = Double.parseDouble(map.get("满"));
+					jian = Double.parseDouble(map.get("减"));
+				}
+				if(!isFirst && tempPrice >= Double.parseDouble(map.get("满"))
+						&& Double.parseDouble(map.get("满")) > man){
+					isFirst = false;
+					man = Double.parseDouble(map.get("满"));
+					jian = Double.parseDouble(map.get("减"));
+				}
+				
+			}
+			
+		}
+		
+		endPrice = tempPrice - jian;
+		
+		return endPrice;
+	}
+	
+	/**
+	 * 替换方法，将满减促销中的数据进行替换，使数据进行统一化
+	 * 
+	 * @param str
+	 *            促销内容
+	 * @return
+	 */
+	public static String replacePromotionInfo(String str) {
+		String replacestr = str;
+		for (HashMap<String, String> map : DataSelection.promotionReplace) {
+			for (String key : map.keySet()) {
+				replacestr = replacestr.replace(key, map.get(key));
+			}
+		}
+		return replacestr;
+	}
+}

@@ -1,0 +1,49 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>  
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>  
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html class="loginHtml">
+<head>
+	<meta charset="utf-8">
+	<title>巡检配置系统-登录</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="format-detection" content="telephone=no">
+	<link rel="icon" href="logo.ico">
+	<link rel="stylesheet" href="layui/css/layui.css" media="all" />
+	<link rel="stylesheet" href="css/public.css" media="all" />
+	<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+	<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+</head>
+<body class="loginBody" onload="document.loginForm.j_username.focus();">
+	<form class="layui-form" name="loginForm" action="<c:url value='/j_spring_security_check'/>" method="post">
+		<div class="login_face"><img src="images/logo.jpg" class="userAvatar"></div>
+		<div class="layui-form-item input-item">
+			<label for="userName">用户名</label>
+			<input name='j_username' type="text" placeholder="请输入用户名" autocomplete="off" id="userName" class="layui-input" lay-verify="required">
+		</div>
+		<div class="layui-form-item input-item">
+			<label for="password">密码</label>
+			<input name='j_password' type="password" placeholder="请输入密码" autocomplete="off" id="password" class="layui-input" lay-verify="required">
+		</div>
+		<input  id="ctx" style="display:none" value="${pageContext.request.contextPath}">
+		
+		<div class="layui-form-item">
+			<button name="submit" type="submit" class="layui-btn layui-block" lay-filter="login" lay-submit>登录</button>
+		</div>
+		<!-- 显示登录失败原因 -->  
+	    <c:if test="${not empty param.error}">  
+	        <font color="red"> 登录失败<br />  
+	        <br />  
+	        原因: <c:out value="${SPRING_SECURITY_LAST_EXCEPTION.message}" />. </font>  
+	    </c:if> 
+	</form>
+ 
+<script type="text/javascript" src="layui/layui.js"></script>
+<script type="text/javascript" src="js/cache.js"></script>
+<script type="text/javascript" src="login.js"></script>
+</body>
+</html>

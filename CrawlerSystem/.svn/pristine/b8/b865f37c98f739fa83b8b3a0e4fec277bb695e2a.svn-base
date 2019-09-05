@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.ApiProductDao" >
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from api_product where id = #{id}
+  </delete>
+  
+  <insert id="insert" parameterType="com.syntun.entity.ApiProduct">
+    insert into api_product (pid,name)
+    values (#{pid},#{name})
+  </insert>
+  
+  <insert id="insertByBatch" parameterType="java.util.List">
+       insert IGNORE into api_product (pid,name)
+       values
+       <foreach collection="list" item="item" index="index" separator=",">
+           (#{item.pid}, #{item.name})
+       </foreach>
+  </insert>
+   
+  <select id="find" parameterType="map" resultType="com.syntun.entity.ApiProduct">
+     SELECT * FROM api_product WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     <if test="onecategoryname!=null and onecategoryname!=''">
+         AND onecategoryname like '%${onecategoryname}%'
+     </if>
+     <if test="twocategoryname!=null and twocategoryname!=''">
+         AND twocategoryname like '%${twocategoryname}%'
+     </if>
+     <if test="threecategoryname!=null and threecategoryname!=''">
+         AND threecategoryname like '%${threecategoryname}%'
+     </if>
+     ORDER BY createtime desc
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM api_product WHERE 1=1
+     <if test="platformid!=null and platformid!=''">
+         AND platformid=#{platformid}
+     </if>
+     <if test="platformname!=null and platformname!=''">
+         AND platformname like '%${platformname}%'
+     </if>
+     <if test="onecategoryname!=null and onecategoryname!=''">
+         AND onecategoryname like '%${onecategoryname}%'
+     </if>
+     <if test="twocategoryname!=null and twocategoryname!=''">
+         AND twocategoryname like '%${twocategoryname}%'
+     </if>
+     <if test="threecategoryname!=null and threecategoryname!=''">
+         AND threecategoryname like '%${threecategoryname}%'
+     </if>
+ </select>
+ 
+ <select id="findInfo" parameterType="map" resultType="com.syntun.entity.ApiProduct">
+     SELECT * FROM api_product WHERE 1=1
+     <if test="pid!=null and pid!=''">
+         AND pid = #{pid}
+     </if>
+ </select>
+ 
+  <select id="findone"  parameterType="java.lang.Integer"  resultType="com.syntun.entity.ApiProduct">
+    select * from api_product where id=#{id}
+  </select>
+  
+</mapper>

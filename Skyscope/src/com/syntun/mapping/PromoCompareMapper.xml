@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.PromoCompareDao" >
+  <resultMap id="BaseResultMap" type="PromoCompare" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="promotionType" column="promotion_type" jdbcType="VARCHAR" />
+    <result property="platformId" column="platform_id" jdbcType="INTEGER"/>
+    <result property="platformName" column="platform_name" jdbcType="VARCHAR" />
+    <result property="promotionTypeName" column="promotion_type_name" jdbcType="VARCHAR" />
+    <result property="promotionStandard" column="promotion_standard" jdbcType="VARCHAR" />
+    <result property="promotionId" column="promotion_id" jdbcType="INTEGER" />
+  </resultMap>
+  
+   <insert id="insert" parameterType="PromoCompare" >
+     insert into promotion_compare (promotion_type, platform_id, platform_name, promotion_type_name, promotion_standard, promotion_id)
+    values (#{promotionType,jdbcType=VARCHAR},#{platformId,jdbcType=DOUBLE}, #{platformName,jdbcType=VARCHAR}, 
+    		#{promotionTypeName,jdbcType=VARCHAR},#{promotionStandard,jdbcType=VARCHAR},
+    		#{promotionId,jdbcType=DOUBLE})
+  </insert>
+  
+  <select id="selectRecord" resultType="PromoCompare">
+    select * FROM promotion_compare
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map"  resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM promotion_compare
+    <if test="promotionTypeName != null" > where promotion_type_name like CONCAT('%',#{promotionTypeName},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from promotion_compare ORDER BY id DESC
+  </select>
+  
+  <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from promotion_compare where 1=1 
+     <if test="promotionTypeName != null" > and promotion_type_name like CONCAT('%',#{promotionTypeName},'%') </if>
+      ORDER BY id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into promotion_compare (promotion_type, platform_id, platform_name, promotion_type_name, promotion_standard, promotion_id)
+    values (#{promotionType,jdbcType=VARCHAR},#{platformId,jdbcType=DOUBLE}, #{platformName,jdbcType=VARCHAR}, 
+    		#{promotionTypeName,jdbcType=VARCHAR},#{promotionStandard,jdbcType=VARCHAR},
+    		#{promotionId,jdbcType=DOUBLE})
+  </insert>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from promotion_compare where id = #{id}
+  </delete>
+  <delete id="delPriceRecord" parameterType="java.util.Map">
+  	delete from price_promotion_compute where 
+  		promotion_type_name = (select promotion_type_name from promotion_compare where id = #{id} )
+  		and platform_id = (select platform_id from promotion_compare where id = #{id} )
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from promotion_compare where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update promotion_compare set 
+  		promotion_type = #{promotionType,jdbcType=VARCHAR},
+  		platform_id = #{platformId,jdbcType=DOUBLE}, 
+  		platform_name = #{platformName,jdbcType=VARCHAR},
+  		promotion_type_name = #{promotionTypeName,jdbcType=VARCHAR},
+  		promotion_standard = #{promotionStandard,jdbcType=VARCHAR},
+  		promotion_id = #{promotionId,jdbcType=DOUBLE}
+  		where id = #{id}
+  </update>
+  
+
+</mapper>

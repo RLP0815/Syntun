@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.CrawlerJD144PurlListDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="CrawlerJD144PurlList" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="urlGroup" column="url_group" jdbcType="INTEGER" />
+    <result property="purlStr" column="purl_str" jdbcType="VARCHAR" />
+    <result property="params" column="params" jdbcType="VARCHAR" />
+    <result property="exeParams" column="exe_params" jdbcType="VARCHAR" />
+    <result property="patternId" column="pattern_id" jdbcType="VARCHAR" />
+    <result property="parentPurlId" column="parent_purl_id" jdbcType="VARCHAR" />
+    <result property="sortId" column="sort_id" jdbcType="INTEGER" />
+    <result property="generateSortId" column="generate_sort_id" jdbcType="INTEGER" />
+    <result property="writeTime" column="write_time" jdbcType="VARCHAR" />
+    <result property="remark" column="remark" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectCrawlerJD144PurlList" resultType="CrawlerJD144PurlList">
+    select * FROM purl_list
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM purl_list ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM purl_list
+    <if test="purlStr != null" > where purl_str like CONCAT('%',#{purlStr},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from purl_list where purl_str like CONCAT('%',#{purlStr},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from purl_list where 1=1 
+     <if test="purlStr != null" > and purl_str like CONCAT('%',#{purlStr},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into purl_list (url_group, purl_str, params, exe_params, pattern_id, parent_purl_id, sort_id, generate_sort_id, write_time, remark)
+    values (#{purlStr}, #{urlGroup}, #{params}, #{exeParams}, #{patternId}, #{parentPurlId}, #{sortId}, #{generateSortId}, #{writeTime}, #{remark})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update purl_list set 
+  		url_group = #{urlGroup},
+  		purl_str = #{purlStr}, 
+  		params = #{params},
+  		exe_params = #{exeParams},
+  		pattern_id = #{patternId},
+  		parent_purl_id = #{parentPurlId},
+  		sort_id = #{sortId},
+  		generate_sort_id = #{generateSortId},
+  		write_time = #{writeTime},
+  		remark = #{remark} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from purl_list where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from purl_list where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

@@ -1,0 +1,155 @@
+package com.syntun.controller;
+
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.syntun.entity.DataTableFiled;
+import com.syntun.service.DataTableFiledService;
+import com.syntun.util.GenericController;
+
+import net.sf.json.JSONArray;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/dataTableFiled")
+public class DataTableFiledController {
+    @Resource(name = "dataTableFiledService")
+    DataTableFiledService dataTableFiledService;
+    
+    
+    @RequestMapping(value = "/login")
+    public ModelAndView login()
+    {
+        ModelAndView mv=new ModelAndView();
+        List<DataTableFiled> dataTableFiled = dataTableFiledService.login();
+        mv.addObject("dataTableFiled",dataTableFiled);
+        mv.setViewName("/login");
+        return mv;
+    }
+    
+    @RequestMapping(value = "/getAllList")
+	public void getAllList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+    	String filedName = request.getParameter("filedName");
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("filedName",filedName);
+
+		List<DataTableFiled> resultMap = dataTableFiledService.getAllList(params);
+		
+		JSONArray json = JSONArray.fromObject(resultMap);
+		
+    	response.getWriter().print(json);
+		
+	}
+    
+	@RequestMapping(value = "/getList")
+	public void getList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String filedName = request.getParameter("filedName");
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("page",start);
+		params.put("limit",limit);
+		params.put("filedName",filedName);
+		
+		int count = dataTableFiledService.getCount(params);
+		List<DataTableFiled> result = dataTableFiledService.getList(params);
+		
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+		
+	}
+	
+	@RequestMapping(value = "/addRecord")
+	public void addRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String filedName = request.getParameter("filedName");
+		String tableId = request.getParameter("tableId");
+		String filedDataType = request.getParameter("filedDataType");
+		String defaultValue = request.getParameter("defaultValue");
+		String filedDataFun = request.getParameter("filedDataFun");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("filedName",filedName);
+		params.put("tableId",tableId);
+		params.put("filedDataType",filedDataType);
+		params.put("defaultValue",defaultValue);
+		params.put("filedDataFun",filedDataFun);
+		
+		dataTableFiledService.addRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delRecord")
+	public void delRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String filedId = request.getParameter("filedId");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("filedId",filedId);
+		
+		dataTableFiledService.delRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delAllRecord")
+	public void delAllRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String items = request.getParameter("filedIds");
+		
+        List<String> delList = new ArrayList<String>();
+        String[] strs = items.split(",");
+        for (String str : strs) {
+            delList.add(str);
+        }
+		
+		dataTableFiledService.delAllRecord(delList);
+		
+	}
+	
+	@RequestMapping(value = "/editRecord")
+	public void editRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String filedId = request.getParameter("filedId");
+		String filedName = request.getParameter("filedName");
+		String tableId = request.getParameter("tableId");
+		String filedDataType = request.getParameter("filedDataType");
+		String defaultValue = request.getParameter("defaultValue");
+		String filedDataFun = request.getParameter("filedDataFun");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("filedId",filedId);
+		params.put("filedName",filedName);
+		params.put("tableId",tableId);
+		params.put("filedDataType",filedDataType);
+		params.put("defaultValue",defaultValue);
+		params.put("filedDataFun",filedDataFun);
+		
+		dataTableFiledService.editRecord(params);
+	}
+   
+}

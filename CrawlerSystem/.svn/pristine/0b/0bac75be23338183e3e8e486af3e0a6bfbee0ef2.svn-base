@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.CrawlerJD144UrlCookieDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="CrawlerJD144UrlCookie" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="urlGroup" column="url_group" jdbcType="INTEGER" />
+    <result property="cookieStr" column="cookie_str" jdbcType="VARCHAR" />
+    <result property="sortId" column="sort_id" jdbcType="INTEGER" />
+  </resultMap>
+
+  <select id="selectCrawlerJD144UrlCookie" resultType="CrawlerJD144UrlCookie">
+    select * FROM url_cookie
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM url_cookie ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM url_cookie
+    <if test="cookieStr != null" > where url_str like CONCAT('%',#{cookieStr},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from url_cookie where url_str like CONCAT('%',#{cookieStr},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from url_cookie where 1=1 
+     <if test="cookieStr != null" > and url_str like CONCAT('%',#{cookieStr},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into url_cookie (url_group, cookie_str, sort_id)
+    values (#{urlGroup},#{cookieStr}, #{sortId})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update url_cookie set
+  		url_group = #{urlGroup},
+  		cookie_str = #{cookieStr}, 
+  		sort_id = #{sortId} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from url_cookie where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from url_cookie where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

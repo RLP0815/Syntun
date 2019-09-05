@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD SQL Map Config 3.0//EN"
+                "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+        <typeAlias type="com.syntun.entity.TAdmin" alias="TAdmin" />
+        <typeAlias type="com.syntun.entity.EditRemark" alias="EditRemark" />
+        <typeAlias type="com.syntun.entity.Permission" alias="Permission" />
+        <typeAlias type="com.syntun.entity.DataTable" alias="DataTable" />
+        <typeAlias type="com.syntun.entity.DataTableFiled" alias="DataTableFiled" />
+        <typeAlias type="com.syntun.entity.FilterUrl" alias="FilterUrl" />
+        <typeAlias type="com.syntun.entity.InitUrl" alias="InitUrl" />
+        <typeAlias type="com.syntun.entity.ProductUrl" alias="ProductUrl" />
+        <typeAlias type="com.syntun.entity.PurlList" alias="PurlList" />
+        <typeAlias type="com.syntun.entity.ReplaceStr" alias="ReplaceStr" />
+        <typeAlias type="com.syntun.entity.Url302List" alias="Url302List" />
+        <typeAlias type="com.syntun.entity.UrlCookie" alias="UrlCookie" />
+        <typeAlias type="com.syntun.entity.UrlCookieList" alias="UrlCookieList" />
+        <typeAlias type="com.syntun.entity.UrlLimitList" alias="UrlLimitList" />
+        <typeAlias type="com.syntun.entity.WebError" alias="WebError" />
+        <typeAlias type="com.syntun.entity.TableUniqueKey" alias="TableUniqueKey" />
+    </typeAliases>
+</configuration>

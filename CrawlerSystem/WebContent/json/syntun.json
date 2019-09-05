@@ -1,0 +1,12 @@
+{
+	"contentManagement": [
+		{
+			"title": "天猫促销",
+			"icon": "icon-text",
+			"href": "page/syntun/filed/TmallPromotion.jsp",
+			"spread": false
+		}
+	]
+}
+
+

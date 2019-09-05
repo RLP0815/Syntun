@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.Crawler144UrlStatusDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="Crawler144UrlStatus" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="addTime" column="add_time" jdbcType="VARCHAR" />
+    <result property="getTime" column="get_time" jdbcType="VARCHAR" />
+    <result property="parseTime" column="parse_time" jdbcType="VARCHAR" />
+    <result property="isParseOver" column="is_parse_over" jdbcType="INTEGER" />
+    <result property="tryNum" column="try_num" jdbcType="INTEGER" />
+    <result property="urlMd5" column="url_md5" jdbcType="VARCHAR" />
+    <result property="insertBatchNum" column="insert_batch_num" jdbcType="VARCHAR" />
+    <result property="sortId" column="sort_id" jdbcType="INTEGER" />
+  </resultMap>
+
+  <select id="selectCrawler144UrlStatus" resultType="Crawler144UrlStatus">
+    select * FROM url_status
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM url_status ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM url_status
+    <if test="addTime != null" > where add_time like CONCAT('%',#{addTime},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from url_status where add_time like CONCAT('%',#{addTime},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from url_status where 1=1 
+     <if test="addTime != null" > and add_time like CONCAT('%',#{addTime},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into url_status (add_time, get_time, parse_time, is_parse_over, try_num, 
+    							url_md5, insert_batch_num, sort_id)
+    values (#{addTime},#{getTime}, #{parseTime},  #{isParseOver}, #{tryNum},
+    	#{urlMd5}, #{insertBatchNum}, #{sortId})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update url_status set add_time = #{addTime}, 
+  		get_time = #{getTime},
+  		parse_time = #{parseTime},
+  		is_parse_over = #{isParseOver},
+  		try_num = #{tryNum},
+  		url_md5 = #{urlMd5},
+  		insert_batch_num = #{insertBatchNum},
+  		sort_id = #{sortId} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from url_status where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from url_status where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

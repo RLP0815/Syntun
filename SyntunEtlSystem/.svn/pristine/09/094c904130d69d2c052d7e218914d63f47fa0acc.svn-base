@@ -1,0 +1,103 @@
+package com.syntun.collect.resultUniq;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import com.syntun.etl.tools.ConvertTools;
+
+public class CollectReduce extends Reducer<Text, Text, Text, Text> {
+	private MultipleOutputs<Text, Text> mos;
+	@Override
+	protected void setup(Context context) throws IOException, InterruptedException {
+		mos = new MultipleOutputs<Text, Text>(context);
+		super.setup(context);
+	}
+
+	@Override
+	protected void cleanup(Context context) throws IOException, InterruptedException {
+		mos.close();
+		super.cleanup(context);
+	}
+
+	public void reduce(Text key, Iterable<Text> value, Context context) throws IOException, InterruptedException {
+
+		List<HashMap<String, String>> dataList = new ArrayList<HashMap<String, String>>();
+		for (Text content : value) {
+			String line = new String((content).getBytes(), 0, (content).getLength(), "UTF-8");
+			Map<String, String> map = ConvertTools.convertStrToMapR(line);
+			if (map == null) {
+				continue;
+			}
+			HashMap<String, String> m1 = new HashMap<String, String>(map);
+			dataList.add(m1);
+			//break;
+		}
+
+		for (int i = 0; i < dataList.size(); i++) {
+			//if (dataList.size() > 0) {
+			HashMap<String, String> m = dataList.get(i);
+			
+			String commentContent = m.get("6");
+			
+//			if(commentContent != null){
+//				//commentContent = commentContent.replace("\\", "").replace("‘", "").replace("’", "").replace("'", "");
+//				Pattern pa = Pattern.compile("\\s*|\t|\r|\n");
+//				Matcher ma = pa.matcher(commentContent);
+//				commentContent = ma.replaceAll("");
+//			}else{
+//				return;
+//			}
+	        
+			String v = m.get("4")+"	"+
+					m.get("5")+"	"+
+					"null"+"	"+
+					m.get("7")+"	"+
+					m.get("8")+"	"+
+					m.get("9")+"	"+
+					m.get("10")+"	"+
+					m.get("11")+"	"+
+					m.get("12")+"	"+
+					m.get("13")+"	"+
+					m.get("14")+"	"+
+					m.get("15")+"	"+
+					m.get("16")+"	"+
+					m.get("17")+"	"+
+					m.get("18")+"	"+
+					m.get("19")+"	"+
+					m.get("20")+"	"+
+					m.get("21")+"	"+
+					m.get("22");
+//			String k = m.get("0")+"	"+m.get("1")+"	"+m.get("2")+"	"+m.get("3");
+//			if(k.split("	").length != 4 || v.split("	").length != 19){
+//				System.out.println(k + "	" + v);
+//				return;
+//			}
+			
+			String userName = m.get("1");
+//	        if(StringUtils.isNotBlank(userName)){
+//	        	userName = userName.replaceAll("[\\ud800\\udc00-\\udbff\\udfff\\ud800-\\udfff]", "");
+//	        	Pattern pa = Pattern.compile("\\s*|\t|\r|\n");
+//				Matcher ma = pa.matcher(userName);
+//				userName = ma.replaceAll("");
+//	        }
+//			if(userName != null && userName.length() > 50)
+//				userName = userName.substring(0, 50);
+			
+			try {
+				context.write(new Text(m.get("0")+"	"+userName+"	"+m.get("2")+"	"+m.get("3")), new Text(v.getBytes("UTF-8")));
+				//context.write(new Text(m.get("0")+"	"+m.get("1")), new Text(v.replace("\n",	 "").replace("\r\n", "").toString().getBytes("UTF-8")));
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}

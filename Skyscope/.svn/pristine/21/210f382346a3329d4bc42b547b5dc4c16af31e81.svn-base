@@ -1,0 +1,801 @@
+package com.syntun.inspect;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.syntun.entity.PricePromotionInfo;
+import com.syntun.etl.tools.BaseDao;
+import com.syntun.etl.tools.BaseDaoSqlServer;
+import com.syntun.etl.tools.ConnectSql60;
+import com.syntun.etl.tools.ConnectSqlServer16;
+import com.syntun.etl.tools.ConvertSql;
+import com.syntun.etl.tools.InsertData;
+import com.syntun.etl.tools.InsertDataSqlServer;
+import com.syntun.util.SyntunEmail;
+
+/*
+ * 价格巡检（单独用户）
+ */
+public class SkyscopeInspectUser {
+
+	/**
+	 * 结果sql集合
+	 */
+	public static List<String> etlResult = new ArrayList<String>();
+	/**
+	 * 结果sql集合-伊利
+	 */
+	public static List<String> etlResultYili = new ArrayList<String>();
+	/**
+	 * 错误集合
+	 */
+	public static List<String> errResult = new ArrayList<String>();
+	/**
+	 * 价格小于1的结果sql集合
+	 */
+	public static List<String> priceLess = new ArrayList<String>();
+	/**
+	 * 下架产品结果sql集合
+	 */
+	public static List<String> xiajiaTatal = new ArrayList<String>();
+	/**
+	 * 天猫库存为0结果sql集合
+	 */
+	public static List<String> tmallStockXiajia = new ArrayList<String>();
+	/**
+	 * 未处理折扣结果sql集合
+	 */
+	public static List<String> ZKsql = new ArrayList<String>();
+	/**
+	 * 未匹配促销结果sql集合
+	 */
+	public static List<String> promotionCompareInfo = new ArrayList<String>();
+
+	public static void main(String[] args) {
+		// 数据日期
+		String dateStr = "2018-09-07";
+		String hour = "14";
+		String min = "15";
+		String groupId = "1";
+		String userId = "84";
+		String userName = "用户a";
+		String email = "liping.ren@syntun.com";
+		SkyscopeInspectUser.getResult(dateStr, hour, min, groupId, userId, userName, email);
+		System.exit(0);
+		// 读取结果表的字段列表
+//		List<String> filedList = BaseDaoSqlServer.getField16("PATROL_INSPECTION_LIST_HALF_COPY");
+//		System.out.println(filedList);
+	}
+
+	public static void getResult(String dateStr, String hour, String min, String groupId, String userId, String userName, String email) {
+		/**
+		 * 结果sql集合
+		 */
+		etlResult = new ArrayList<String>();
+		/**
+		 * 结果sql集合-伊利
+		 */
+		etlResultYili = new ArrayList<String>();
+		/**
+		 * 错误集合
+		 */
+		errResult = new ArrayList<String>();
+		/**
+		 * 价格小于1的结果sql集合
+		 */
+		priceLess = new ArrayList<String>();
+		/**
+		 * 下架产品结果sql集合
+		 */
+		xiajiaTatal = new ArrayList<String>();
+		/**
+		 * 天猫库存为0结果sql集合
+		 */
+		tmallStockXiajia = new ArrayList<String>();
+		/**
+		 * 未处理折扣结果sql集合、、[skyscope].[dbo].[折扣未处理_copy]
+		 */
+		ZKsql = new ArrayList<String>();
+		/**
+		 * 未匹配促销结果sql集合、、promotion_compare_info_copy
+		 */
+		promotionCompareInfo = new ArrayList<String>();
+		
+		// 数据抓取时间
+		String getDate = dateStr + " " + (hour.length() == 1 ? ("0" + hour) : hour) + ":"
+				+ (min.equals("15") ? "00" : "30") + ":00";
+
+		Date day1 = new Date();    
+
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+
+		
+		// 60数据库，数据库连接外传，便于读取数据代码复用
+		Connection conn60 = ConnectSql60.getConn();
+		// 16数据库，数据库连接外传，便于读取数据代码复用
+		Connection conn16 = ConnectSqlServer16.getConn();
+		
+		/*
+		 * 先删除结果数据
+		 */
+//		// 删除价格小于1的结果
+//		boolean isPriceLess = BaseDaoSqlServer.truncateTbaleAllData("[skyscope_temp].[dbo].[price_less_than_one_copy]", conn16);
+//		// 删除下架产品结果
+//		boolean isXiajiaTatal = BaseDaoSqlServer.truncateTbaleAllData("[skyscope_temp].[dbo].[XIAJIABIAO_TOTAL_COPY]", conn16);
+//		// 删除结果表
+//		boolean isPatrolList = BaseDaoSqlServer.truncateTbaleAllData("[skyscope_temp].[dbo].[PATROL_INSPECTION_LIST_HALF_COPY]", conn16);
+//		// 删除天猫库存为0结果
+//		boolean isTmallXiajia = BaseDao.truncateTbaleAllData("skyscope.tmall_stock_xiajia_copy", conn60);
+//		// 删除价格结果
+//		//boolean isPrice = BaseDao.truncateTbaleAllData("skyscope_etl.price_result_copy", conn60);
+//		// 删除错误结果
+//		boolean isErr = BaseDao.truncateTbaleAllData("skyscope_etl.err_result_copy", conn60);
+//		// 删除未匹配促销结果
+//		boolean isPromotion = BaseDao.truncateTbaleAllData("skyscope_etl.promotion_compare_info_copy", conn60);
+//		// 删除未处理折扣结果
+//		boolean isCopy = BaseDaoSqlServer.truncateTbaleAllData("[skyscope].[dbo].[折扣未处理_copy]", conn16);
+//		
+//		if(!isPriceLess || !isXiajiaTatal || !isPatrolList || !isTmallXiajia || !isErr || !isPromotion || !isCopy){
+//			ConnectSql60.push(conn60);
+//			ConnectSqlServer16.push(conn16);
+//			return;
+//		}
+		
+		HashMap<String, String> filterG = new HashMap<String, String>();
+		// 读取用户组
+		List<HashMap<String, String>> skyGroups = BaseDao.getAllTbaleList("skyscope_etl.sky_groups", filterG, conn60);
+
+		// 生成主键的列集合
+		List<String> keyListU = new ArrayList<String>();
+		keyListU.add("group_id");
+		// 读取用户条件
+		HashMap<String, String> filterU = new HashMap<String, String>();
+		// 读取用户列表
+		HashMap<String, List<HashMap<String, String>>> skyUsers = BaseDao.getAllTbalePriceList("skyscope_etl.sky_users",
+				filterU, keyListU, conn60);
+
+		// 存储用户对应的product_id列表
+		HashMap<String, List<String>> skuUserList = BaseDaoSqlServer.getAllTbaleSkuUserList("[skyscope].[dbo].[SKYSCOPE_PRICE]",
+				conn16);
+
+		// 生成主键的列集合
+		List<String> keyListUP = new ArrayList<String>();
+		keyListUP.add("C_ID");
+		keyListUP.add("PRODUCT_ID");
+		keyListUP.add("SHOP_ID");
+		keyListUP.add("CITY_ID");
+		// 读取标准表的用户和产品
+		HashMap<String, String> filterUP = new HashMap<String, String>();
+		filterUP.put("SON_TYPE", "1");
+		
+		// 读取用户和产品
+		HashMap<String, List<HashMap<String, String>>> userProduct = BaseDaoSqlServer
+				.getTbaleAllData16("[skyscope].[dbo].[SKYSCOPE_PRICE]", filterUP, keyListUP, conn16);
+
+		// 生成组合主键的列集合
+		List<String> keyList1 = new ArrayList<String>();
+		keyList1.add("platform_id");
+		keyList1.add("shop_id");
+		keyList1.add("operation_product_id");	// 单品地址
+		keyList1.add("sku_id");					// 单品唯一标示
+		keyList1.add("city_id");
+		keyList1.add("type");
+		keyList1.add("product_id");
+		
+		// 读取价格条件
+		HashMap<String, String> filter = new HashMap<String, String>();
+		filter.put("get_date", dateStr);
+		filter.put("hour", hour);
+		filter.put("min", min);
+		// 读取价格
+		HashMap<String, List<HashMap<String, String>>> priceData = BaseDaoSqlServer
+				.getTbaleAllData16("[skyscope].[dbo].[PRICE_PRODUCT_LIST_half_copy]", filter, keyList1, conn16);
+//		HashMap<String, List<HashMap<String, String>>> priceData = BaseDao
+//				.getAllTbalePriceList("skyscope.shop_product_price_list", filter, keyList1, conn60);
+
+		// 读取促销
+		List<String> keyList = new ArrayList<String>();
+		keyList.add("platform_id");
+		keyList.add("shop_id");
+		keyList.add("operation_product_id");
+		// 读取促销
+		HashMap<String, List<HashMap<String, String>>> promotionData = BaseDaoSqlServer
+				.getTbaleAllData16("[skyscope].[dbo].[PRICE_PROMOTION_INFO_half_copy]", filter, keyList, conn16);
+//		HashMap<String, List<HashMap<String, String>>> promotionData = BaseDao
+//				.getAllTbalePriceList("skyscope.promotion_info", filter, keyList, conn60);
+
+		// 生成主键的列集合
+		List<String> keyListph = new ArrayList<String>();
+		keyListph.add("product_id");
+		keyListph.add("shop_id");
+		// 读取标准表的用户和产品
+		HashMap<String, String> filterph = new HashMap<String, String>();
+		
+		// 读取飞利浦产品列表
+		HashMap<String, List<HashMap<String, String>>> philipsShopImportant = BaseDaoSqlServer
+				.getTbaleAllData16("[skyscope].[dbo].[philips_shop_important]", filterph, keyListph, conn16);
+		
+		// 生成主键的列集合
+		List<String> keyListxa = new ArrayList<String>();
+		keyListxa.add("product_id");
+		keyListxa.add("shop_id");
+		// 读取标准表的用户和产品
+		HashMap<String, String> filterxa = new HashMap<String, String>();
+		
+		// 读取新安怡产品列表
+		HashMap<String, List<HashMap<String, String>>> xinanyiImportShop = BaseDaoSqlServer
+				.getTbaleAllData16("[skyscope].[dbo].[xinanyi_import_shop_sku]", filterxa, keyListxa, conn16);
+		
+		// 生成组合主键的列集合
+		List<String> keyListD = new ArrayList<String>();
+		keyListD.add("operation_product_id");
+		keyListD.add("shop_code");
+		// 读取苏宁对照表
+		HashMap<String, List<HashMap<String, String>>> duizhaoData = BaseDao
+				.getAllDuizhaoList("skyscope.suning_duizhao", filter, keyListD, conn60);
+		// 读取下架
+		List<String> keyListXJ = new ArrayList<String>();
+		keyListXJ.add("platform_id");
+		keyListXJ.add("operation_product_id");
+		// 读取下架数据
+		HashMap<String, List<HashMap<String, String>>> xiajiaData = BaseDao.getAllTbalePriceList("skyscope.xiajiabiao",
+				filter, keyListXJ, conn60);
+
+		// 读取促销
+		List<String> keyListst = new ArrayList<String>();
+		keyListst.add("platform_id");
+		keyListst.add("shop_id");
+		keyListst.add("operation_product_id");
+		keyListst.add("sku_id");
+		keyListst.add("city_id");
+		// 读取库存数据
+		HashMap<String, List<HashMap<String, String>>> stockData = BaseDao
+				.getAllTbalePriceList("skyscope.shop_product_Stock_list", filter, keyListst, conn60);
+
+		// 价格小于1的数据集合
+		//HashMap<String, List<HashMap<String, String>>> lessData = new HashMap<String, List<HashMap<String, String>>>();
+		
+		// 读取product_list数据 ,此表中含有brand_id
+		HashMap<String, String> productList = BaseDaoSqlServer.getTbaleList2("[syntun_base].[dbo].[product_list]", "product_id", conn16);
+		// 读取shop_list数据
+		HashMap<String, String> shopList = BaseDaoSqlServer.getTbaleList("[syntun_base].[dbo].[shop_list]", "shop_id", "shop_name");
+		// 读取platform_list数据
+		//HashMap<String, String> platformList = BaseDaoSqlServer.getTbaleList("[syntun_base].[dbo].[platform_list]", "platform_id", "platform_name");
+		// 读取category_list数据
+		HashMap<String, String> categoryList = BaseDaoSqlServer.getTbaleList("[syntun_base].[dbo].[category_list]", "category_id", "category_name");
+		// 读取brand_list数据
+		HashMap<String, String> brandList = BaseDaoSqlServer.getTbaleList("[syntun_base].[dbo].[brand_list]", "BRAND_ID", "BRAND_NAME");
+				
+		// 读取结果表的字段列表
+		List<String> lessFiledList = BaseDaoSqlServer.getField16("price_less_than_one_copy");
+		// 读取结果表的字段列表
+		List<String> xiajiaFiledList = BaseDaoSqlServer.getField16("xiajiabiao_total_copy");
+		// 读取天猫下架表的字段列表
+		List<String> tmallFiledList = BaseDao.getField("skyscope.tmall_stock_xiajia_copy", conn60);
+		tmallFiledList.remove("id");
+		
+		HashMap<String, String> filterS = new HashMap<String, String>();
+		// 获取需要归类的促销类型
+		List<HashMap<String, String>> productState = BaseDao.getAllTbaleList("skyscope_etl.product_state", filterS, conn60);
+		
+		HashMap<String, String> platformMap = BaseDao.getListPlat("skyscope_etl.platform_list", "platform_id", "platform_name", conn60);
+		// 读取结果表的字段列表
+		//List<String> filedList = BaseDao.getField("skyscope_etl.price_result", conn60);
+		// 读取结果表的字段列表
+		List<String> filedList = BaseDaoSqlServer.getField16("PATROL_INSPECTION_LIST_HALF_COPY");
+		// 未匹配促销表的字段列表
+		List<String> promotionFiledList = BaseDao.getField("skyscope_etl.promotion_compare_info", conn60);
+		
+
+		ConnectSql60.push(conn60);
+		ConnectSqlServer16.push(conn16);
+		
+		// 读取下架数据
+		HashMap<String, List<HashMap<String, String>>> xiajiaDataYH = new HashMap<String, List<HashMap<String, String>>>();
+		// 复制京东（1）数据作为一号店（7）的下架数据
+		for (String k : xiajiaData.keySet()) {
+
+			if (k.split("\001")[0].equals("1")) {
+				String key = "7" + "\001" + k.split("\001")[1];
+				// 产品价格列表
+				List<HashMap<String, String>> xiajiaD = xiajiaData.get(k);
+				List<HashMap<String, String>> yihaoD = new ArrayList<HashMap<String, String>>();
+				for (HashMap<String, String> xiajiaMap : xiajiaD) {
+					HashMap<String, String> yihaoM = xiajiaMap;
+					yihaoM.put("platform_id", "7");
+					yihaoD.add(yihaoM);
+				}
+				xiajiaDataYH.put(key, yihaoD);
+			}
+		}
+		
+		if(xiajiaDataYH != null && xiajiaDataYH.size() != 0){
+			xiajiaData.putAll(xiajiaDataYH);
+		}
+
+		for (String ks : stockData.keySet()) {
+			// 产品库存
+			List<HashMap<String, String>> stock = stockData.get(ks);
+			// 库存等于0key
+			HashMap<String, String> stockKeyMap = new HashMap<String, String>();
+			if (stock.size() == 1) { 
+				for (HashMap<String, String> stockMap : stock) {
+					//List<HashMap<String, String>> liS = new ArrayList<HashMap<String, String>>();
+					if (stockMap.get("Stock").equals("0") && stockMap.get("platform_id").equals("5")) {
+						// stockKeyMap.put("id", "");
+						stockKeyMap.put("operation_product_id", stockMap.get("operation_product_id"));
+						stockKeyMap.put("error_connect", "天猫平台库存为0的");
+						stockKeyMap.put("platform_id", stockMap.get("platform_id"));
+						stockKeyMap.put("get_data_time", getDate);
+						stockKeyMap.put("hour", stockMap.get("hour"));
+						stockKeyMap.put("min", stockMap.get("min"));
+						stockKeyMap.put("get_date", stockMap.get("get_date"));
+						stockKeyMap.put("shop_id", stockMap.get("shop_id"));
+						stockKeyMap.put("product_id", stockMap.get("product_id"));
+						stockKeyMap.put("shop_code", stockMap.get("shop_code"));
+						stockKeyMap.put("city_id",
+								stockMap.get("city_id").equals("-1") ? "2" : stockMap.get("city_id"));
+
+						//liS.add(stockKeyMap);
+						//lessData.put(promotionKey, liS);
+
+						String sql = ConvertSql.getSql("skyscope.tmall_stock_xiajia_copy", tmallFiledList, stockKeyMap);
+						//System.out.println(tmallStockXiajia.size() + "___" + sql);
+						tmallStockXiajia.add(sql);
+
+						break;
+					}
+				}
+			}else if (stock.size() > 1) {
+				for (HashMap<String, String> stockMap : stock) {
+					//List<HashMap<String, String>> liS = new ArrayList<HashMap<String, String>>();
+					if (stockMap.get("Stock").equals("0") && stockMap.get("platform_id").equals("5")
+							&& stockMap.get("sku_id").equals("def")) {
+						// stockKeyMap.put("id", "");
+						stockKeyMap.put("operation_product_id", stockMap.get("operation_product_id"));
+						stockKeyMap.put("error_connect", "天猫平台库存为0的");
+						stockKeyMap.put("platform_id", stockMap.get("platform_id"));
+						stockKeyMap.put("get_data_time", getDate);
+						stockKeyMap.put("hour", stockMap.get("hour"));
+						stockKeyMap.put("min", stockMap.get("min"));
+						stockKeyMap.put("get_date", stockMap.get("get_date"));
+						stockKeyMap.put("shop_id", stockMap.get("shop_id"));
+						stockKeyMap.put("product_id", stockMap.get("product_id"));
+						stockKeyMap.put("shop_code", stockMap.get("shop_code"));
+						stockKeyMap.put("city_id",
+								stockMap.get("city_id").equals("-1") ? "2" : stockMap.get("city_id"));
+
+						//liS.add(stockKeyMap);
+						//lessData.put(promotionKey, liS);
+
+						String sql = ConvertSql.getSql("skyscope.tmall_stock_xiajia_copy", tmallFiledList, stockKeyMap);
+						//System.out.println(tmallStockXiajia.size() + "___" + sql);
+						tmallStockXiajia.add(sql);
+
+						break;
+					}
+				}
+			}
+		}
+		
+		String[] orderList = new String[5];
+		//String groupId = null;
+		
+		for (HashMap<String, String> groupMap : skyGroups) {
+			if(!groupId.equals(groupMap.get("id"))){
+				continue;
+			}
+			orderList = groupMap.get("inspect").split("-->");
+			groupId = groupMap.get("id");
+			// 用户列表
+			List<HashMap<String, String>> userList = skyUsers.get(groupId);
+			if (null == userList || userList.size() == 0) {
+				continue;
+			}
+			
+			for (HashMap<String, String> user : userList) {
+				if(!userId.equals(user.get("user_id"))){
+					continue;
+				}
+				List<String> nowRunSkuList = new ArrayList<>();
+				
+				userId = user.get("user_id");
+				if (skuUserList.containsKey(user.get("user_id"))) {
+					nowRunSkuList.addAll(skuUserList.get(user.get("user_id")));
+				}
+				
+				//List<HashMap<String, String>> boxiData = new ArrayList<HashMap<String, String>>();
+				HashMap<String, List<HashMap<String, String>>> boxiData1 = new HashMap<String, List<HashMap<String, String>>>();
+				HashMap<String, List<HashMap<String, String>>> boxiData2 = new HashMap<String, List<HashMap<String, String>>>();
+				HashMap<String, List<HashMap<String, String>>> boxiData3 = new HashMap<String, List<HashMap<String, String>>>();
+				
+				// 组合放入流程，。同一主键产品循环处理
+				for (String k : priceData.keySet()) {
+					String promotionKey = k.split("\001")[0] + "\001" + k.split("\001")[1] + "\001" + k.split("\001")[2];
+					String xiajiaKey = k.split("\001")[0] + "\001" + k.split("\001")[2];
+					// 产品价格列表
+					List<HashMap<String, String>> priceD = priceData.get(k);
+					// 价格小于1key
+					HashMap<String, String> lessKeyMap = new HashMap<String, String>();
+
+					// String price = "";
+					// 产品ID
+					String productId = k.split("\001")[6];
+					String shopId = k.split("\001")[1];
+					String cityId = k.split("\001")[4];
+					String type = k.split("\001")[5];
+					
+					// 新安怡客户关联16上skyscope. XINANYI_IMPORT_SHOP_SKU，条件：product_id,shop_id.（只需要）：关联上的输出
+					if(userId.equals("100749")){
+						if(!xinanyiImportShop.containsKey(productId+"\001"+shopId)){
+							break;
+						}
+					}
+					// 飞利浦客户关联16上skyscope. PHILIPS_SHOP_IMPORTANT，条件：product_id,shop_id；（只需要）：关联上的输出
+					if(userId.equals("419")){
+						if(!philipsShopImportant.containsKey(productId+"\001"+shopId)){
+							break;
+						}
+					}
+					
+					if (!nowRunSkuList.contains(productId)) {
+						continue;
+					}
+					boolean isReturn = false;
+					for (HashMap<String, String> priceMap : priceD) {
+						if (priceMap.get("promotion_price").equals("-1")){
+							priceMap.put("promotion_price", priceMap.get("product_price"));
+						}
+						
+						//List<HashMap<String, String>> li = new ArrayList<HashMap<String, String>>();
+						// 处理亚马逊的价格 2,198.00
+						if (priceMap.get("product_price") != null && priceMap.get("product_price").indexOf(",") != -1 
+								&& priceMap.get("platform_id") != null && priceMap.get("platform_id").equals("10")) {
+							priceMap.put("product_price", priceMap.get("product_price").replace(",", ""));
+
+						}
+
+						if (priceMap.get("product_price")!=null && priceMap.get("product_price").equals("")
+								&& !priceMap.get("product_price").equals("null")) {
+							continue;
+
+						}
+						if (priceMap.get("product_price")!=null 
+								&& !priceMap.get("product_price").equals("null")
+								&& !priceMap.get("product_price").equals("")
+								&& Double.parseDouble(priceMap.get("product_price")) <= 1
+								&& (priceMap.get("paltform_id") != null && priceMap.get("paltform_id").equals("3"))) {
+							// lessKeyMap.put("id", priceMap.get("id"));
+							lessKeyMap.put("operation_product_id", priceMap.get("operation_product_id"));
+							lessKeyMap.put("error_connect", "价格小于1");
+							lessKeyMap.put("platform_id", priceMap.get("platform_id"));
+							lessKeyMap.put("get_data_time", getDate);
+							lessKeyMap.put("hour", priceMap.get("hour"));
+							lessKeyMap.put("min", priceMap.get("min"));
+							lessKeyMap.put("get_date", priceMap.get("get_date"));
+							lessKeyMap.put("shop_id", priceMap.get("shop_id"));
+							lessKeyMap.put("product_id", priceMap.get("product_id"));
+							lessKeyMap.put("shop_code", priceMap.get("shop_code"));
+							lessKeyMap.put("city_id", priceMap.get("city_id"));
+
+							//li.add(lessKeyMap);
+							//lessData.put(promotionKey, li);
+
+							String sql = ConvertSql.getSqlServer("[skyscope_temp].[dbo].[PRICE_LESS_THAN_ONE_COPY]", lessFiledList, lessKeyMap);
+							//System.out.println(priceLess.size() + "___" + sql);
+							priceLess.add(sql);
+
+						}
+
+						if (priceMap.get("product_price")!=null && !priceMap.get("product_price").equals("")
+								&& (priceMap.get("promotion_price")==null || priceMap.get("promotion_price").equals("")
+								|| priceMap.get("promotion_price").equals("-1") || priceMap.get("promotion_price").indexOf("?") != -1)){
+							priceMap.put("promotion_price", priceMap.get("product_price"));
+						}
+						
+						if(priceMap.get("promotion_price").equals("-1")
+								||priceMap.get("promotion_price").equals("-1.0")
+								||priceMap.get("promotion_price").equals("-1.00")
+								||priceMap.get("promotion_price").equals("null")){
+							priceMap.put("promotion_price", "-1");
+						}
+						
+						// 产品下架
+						List<HashMap<String, String>> xiajai = null;
+						if (xiajiaData.containsKey(xiajiaKey)) {
+							xiajai = xiajiaData.get(xiajiaKey);
+						} else {
+							xiajai = new ArrayList<HashMap<String, String>>();
+						}
+						if (lessKeyMap.size() != 0) {
+							xiajai.add(lessKeyMap);
+						}
+
+						if (xiajai != null && xiajai.size() != 0) {
+							for (HashMap<String, String> xiajaiMap : xiajai) {
+								for (Map<String, String> state : productState) {
+									//if (!state.get("error_connect").equals("")) {
+										if (state.get("platform_id").equals("0")) {
+											if (xiajaiMap.get("error_connect").equals(state.get("error_connect"))) {
+												priceMap.put("states", state.get("state_code")); // 无货
+												break;
+											}
+										} else {
+											if (xiajaiMap.get("error_connect").equals(state.get("error_connect"))
+													&& xiajaiMap.get("platform_id").equals(state.get("platform_id"))) {
+												priceMap.put("states", state.get("state_code")); // 无货
+												break;
+											}
+										}
+									//} else {
+										//priceMap.put("states", state.get("state_code")); // 下架
+									//}
+								}
+								priceMap.put("states", "1"); // 下架
+								
+								continue;
+							}
+						} else {
+							priceMap.put("states", "99"); // 其他
+						}
+						
+						if(priceMap.get("promotion_price").equals("-1")){
+							isReturn = true;
+						}else{
+							isReturn = false;
+						}
+						//过滤下架数据
+						if (priceMap.get("states").equals("2")) {
+							isReturn = true;
+						}else{
+							isReturn = false;
+						}
+					}
+					
+					if (isReturn) {
+						continue;
+					}
+					
+					
+					HashMap<String, String> keyMap = new HashMap<String, String>();
+					
+					keyMap.put("product_id", productId);
+					keyMap.put("operation_product_id", k.split("\001")[2]);
+					keyMap.put("platform_id", k.split("\001")[0]);
+					keyMap.put("shop_id", k.split("\001")[1]);
+					keyMap.put("sku_id", k.split("\001")[3].equals("def") ? "0" : k.split("\001")[3]);
+					keyMap.put("get_date", getDate);
+
+					//String shopCode = priceD.get(0).get("shop_code");
+					List<HashMap<String, String>> promotion = promotionData.get(promotionKey);
+					if (promotion != null && promotion.size() != 0) {
+						priceD.addAll(promotion);
+					}
+					try {
+						
+						PricePromotionInfo pm = DataSelection.reduce(priceD, true, keyMap, duizhaoData, orderList, promotionFiledList, userId);
+						//System.out.println("========" + pm);
+						if (pm == null) {
+							// System.out.println("no result-----" + k.split("\001")[2] + "___" + k.split("\001")[0]);
+							continue;
+						}
+						if (!nowRunSkuList.contains(productId)) {
+							continue;
+						}
+						
+						HashMap<String, String> filedMap = new HashMap<String, String>();
+						String standardPrice = "0";
+						if(userProduct.get(userId+"\001"+productId+"\001"+shopId+"\001"+cityId)!= null){
+							standardPrice = userProduct.get(userId+"\001"+productId+"\001"+shopId+"\001"+cityId)
+									.get(0).get("product_price");
+						}
+						
+						// 标准价格
+//						String standardPrice = userProduct.get(userId+"\001"+productId+"\001"+shopId+"\001"+cityId+"\001"+type)
+//								.get(0).get("product_price") == null?"0":
+//									userProduct.get(userId+"\001"+productId+"\001"+shopId+"\001"+cityId+"\001"+type)
+//										.get(0).get("product_price");
+						String stock = "0";
+						if(stockData.get(keyMap.get("platform_id")+"\001"+shopId+"\001"+keyMap.get("operation_product_id")+"\001"+keyMap.get("sku_id")+"\001"+cityId)!=null){
+							stock = stockData.get(keyMap.get("platform_id")+"\001"+shopId+"\001"+keyMap.get("operation_product_id")+"\001"+keyMap.get("sku_id")+"\001"+cityId)
+									.get(0).get("Stock") == null?"0":
+										stockData.get(keyMap.get("platform_id")+"\001"+shopId+"\001"+keyMap.get("operation_product_id")+"\001"+keyMap.get("sku_id")+"\001"+cityId)
+										.get(0).get("Stock");
+						}
+//						String stock = stockData.get(keyMap.get("platform_id")+"\001"+shopId+"\001"+keyMap.get("operation_product_id")+"\001"+keyMap.get("sku_id")+"\001"+cityId)
+//								.get(0).get("Stock");
+						//System.out.println(userProduct.get(userId + "\001" + productId));
+						
+						String skuId = (keyMap.get("sku_id")==null||keyMap.get("sku_id").equals(""))?"0":keyMap.get("sku_id");
+						
+						filedMap.put("product_id", productId);
+						filedMap.put("product_name", productList.get(productId).split("\002")[0]);
+						filedMap.put("platform_id", keyMap.get("platform_id"));
+						filedMap.put("platform_name", 
+								platformMap.get(keyMap.get("platform_id")) == null? "":platformMap.get(keyMap.get("platform_id")));
+						filedMap.put("shop_id", keyMap.get("shop_id"));
+						filedMap.put("shop_name", 
+								shopList.get(shopId) == null?"":shopList.get(shopId));
+						filedMap.put("sku_id", (keyMap.get("sku_id")==null||keyMap.get("sku_id").equals(""))?"0":keyMap.get("sku_id"));
+						filedMap.put("son_type", "1");
+						filedMap.put("url_id", keyMap.get("operation_product_id"));
+						filedMap.put("uid", userId);
+						filedMap.put("standard_price", standardPrice);
+						String productPrice = pm.getPromotionPrice();
+						if (productPrice == null) {
+							productPrice = pm.getLingshoujia();
+						}
+						filedMap.put("product_price", pm.getLingshoujia());
+						filedMap.put("violation_price", productPrice);
+						
+						filedMap.put("violation", 
+								Double.parseDouble(productPrice) < Double.parseDouble(standardPrice)
+								?"1":"0");
+						filedMap.put("violation_type_id", "1");
+						filedMap.put("create_at", getDate);
+						filedMap.put("category_id", productList.get(productId).split("\002")[2]);
+						filedMap.put("category_name", categoryList.get(productList.get(productId).split("\002")[2]));
+						filedMap.put("brand_id", productList.get(productId).split("\002")[1]);
+						filedMap.put("brand_name", brandList.get(productList.get(productId).split("\002")[1]));
+						filedMap.put("stock", stock);
+						filedMap.put("city_id", cityId);
+						filedMap.put("type", type);
+						
+						//String sql = ConvertSql.getSqlServer("[skyscope_temp].[dbo].[PATROL_INSPECTION_LIST_HALF_COPY]", filedList, filedMap);
+						//etlResult.add(sql);
+						
+						if(userId.equals("244")){
+							String boxiKey = keyMap.get("operation_product_id") + "\001" +
+									keyMap.get("platform_id") + "\001" +
+									skuId + "\001" +
+									keyMap.get("shop_id") + "\001" + "1";
+							if(cityId.equals("2")){
+								List<HashMap<String, String>> li = null;
+								if (boxiData1.containsKey(boxiKey)) {
+									li = boxiData1.get(boxiKey);
+								} else {
+									li = new ArrayList<HashMap<String, String>>();
+								}
+								li.add(filedMap);
+								boxiData1.put(boxiKey, li);
+							}
+							if(cityId.equals("10")){
+								List<HashMap<String, String>> li = null;
+								if (boxiData2.containsKey(boxiKey)) {
+									li = boxiData2.get(boxiKey);
+								} else {
+									li = new ArrayList<HashMap<String, String>>();
+								}
+								li.add(filedMap);
+								boxiData2.put(boxiKey, li);
+							}
+							if(cityId.equals("232")){
+								List<HashMap<String, String>> li = null;
+								if (boxiData3.containsKey(boxiKey)) {
+									li = boxiData3.get(boxiKey);
+								} else {
+									li = new ArrayList<HashMap<String, String>>();
+								}
+								li.add(filedMap);
+								boxiData3.put(boxiKey, li);
+							}
+						}else{
+							String sql = ConvertSql.getSqlServer("[skyscope_temp].[dbo].[PATROL_INSPECTION_LIST_HALF_COPY]", filedList, filedMap);
+							etlResult.add(sql);
+						}
+						
+						if(userId.equals("100737")){
+							String sqlyili = ConvertSql.getSqlServer("[skyscope_temp].[dbo].[PATROL_INSPECTION_LIST_HALF_yili_copy]", filedList, filedMap);
+							// System.out.println(etlResult.size() + "___" + sql);
+							etlResultYili.add(sqlyili);
+						}
+
+					} catch (IOException e) {
+						e.printStackTrace();
+						
+					}
+
+				}
+				
+				// 博西客户循环遍历
+				for (String k : boxiData2.keySet()) {
+					if(!boxiData1.containsKey(k)){
+						List<HashMap<String, String>> boxiD2 = boxiData2.get(k);
+						boxiData1.put(k, boxiD2);
+					}
+				}
+				for (String k : boxiData3.keySet()) {
+					if(!boxiData1.containsKey(k)){
+						List<HashMap<String, String>> boxiD3 = boxiData3.get(k);
+						boxiData1.put(k, boxiD3);
+					}
+				}
+				for (String k : boxiData1.keySet()) {
+					List<HashMap<String, String>> boxiD1 = boxiData1.get(k);
+					for (HashMap<String, String> boxiMap1 : boxiD1) {
+						String sql = ConvertSql.getSqlServer("[skyscope_temp].[dbo].[PATROL_INSPECTION_LIST_HALF_COPY]", filedList, boxiMap1);
+						etlResult.add(sql);
+					}
+				}
+				
+			}
+			
+		}
+		// xiajai_tatal中补充数据
+		for (String k : xiajiaData.keySet()) {
+			List<HashMap<String, String>> xiajiaD = priceData.get(k);
+			if (xiajiaD != null && xiajiaD.size() != 0) {
+				for (HashMap<String, String> xiajiaMap : xiajiaD) {
+					String sql = ConvertSql.getSqlServer("[skyscope_temp].[dbo].[XIAJIABIAO_TOTAL_COPY]", xiajiaFiledList, xiajiaMap);
+					//System.out.println(xiajiaTatal.size() + "___" + sql);
+					xiajiaTatal.add(sql);
+					break;
+				}
+			}
+		}
+
+//		for(String price : etlResult) {
+//			System.out.println(price);
+//		}
+		
+		System.out.println("---计算时间：  ===" + getDate);
+		System.out.println("---价格小于1数据条数： "+ priceLess.size() + " ===");
+		System.out.println("---下架归类数据条数： "+ xiajiaTatal.size() + " ===");
+		System.out.println("---天猫下架数据条数： "+ tmallStockXiajia.size() + " ===");
+		System.out.println("---执行结果数据条数： "+ etlResult.size() + " ===");
+		System.out.println("---执行结果（伊利）数据条数： "+ etlResultYili.size() + " ===");
+		System.out.println("---未处理折扣数据条数： "+ ZKsql.size() + " ===");
+		System.out.println("---未匹配的促销数据条数： "+ promotionCompareInfo.size() + " ===");
+		System.out.println("---错误数据条数： "+ errResult.size() + " ===");
+
+		 Thread t1 = new Thread(new InsertDataSqlServer(priceLess));
+		 t1.start();
+		 Thread t2 = new Thread(new InsertDataSqlServer(xiajiaTatal));
+		 t2.start();
+		 Thread t3 = new Thread(new InsertData(tmallStockXiajia));
+		 t3.start();
+		 Thread t4 = new Thread(new InsertDataSqlServer(etlResult));
+		 t4.start();
+		 Thread t5 = new Thread(new InsertData(errResult));
+		 t5.start(); 
+		 Thread t6 = new Thread(new InsertData(promotionCompareInfo));
+		 t6.start();
+		 Thread t7 = new Thread(new InsertDataSqlServer(ZKsql));
+		 t7.start();
+		 Thread t8 = new Thread(new InsertDataSqlServer(etlResultYili));
+		 t8.start();
+
+		 boolean isAlice = true;
+			
+		 while(isAlice){
+			if(!t1.isAlive() && !t2.isAlive() && !t3.isAlive() && !t4.isAlive() && 
+					!t5.isAlive() && !t6.isAlive() && !t7.isAlive() && !t8.isAlive()){
+				isAlice = false;
+				Date day2 = new Date(); 
+				try {
+					String mins = min.equals("15")?"00":"30";
+					//SyntunEmail syntunEmail = new SyntunEmail();
+					String[] emails = {email, "liping.ren@syntun.com"};
+					//String[] emails = {"liping.ren@syntun.com"};
+					String text = "巡检流程执行完成，请注意核查！ \n " + 
+							"执行时间段数据：" + dateStr+" "+hour+":" +mins+":00 \n " +
+							"用户：" + userName + " \n " +
+							"执行开始时间：" + df.format(day1) + " \n " +
+							"执行结束时间：" + df.format(day2);
+					//System.out.println(text);
+					SyntunEmail.sendSimpleEmail(emails, "用户巡检数据执行结果", text, "b", "text");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		 }
+		 
+	}
+
+}

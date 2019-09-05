@@ -1,0 +1,152 @@
+package com.syntun.controller;
+
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.syntun.entity.DataTable;
+import com.syntun.service.DataTableService;
+import com.syntun.util.GenericController;
+
+import net.sf.json.JSONArray;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/dataTable")
+public class DataTableController {
+    @Resource(name = "dataTableService")
+    DataTableService dataTableService;
+    
+    
+    @RequestMapping(value = "/login")
+    public ModelAndView login()
+    {
+        ModelAndView mv=new ModelAndView();
+        List<DataTable> dataTable = dataTableService.login();
+        mv.addObject("dataTable",dataTable);
+        mv.setViewName("/login");
+        return mv;
+    }
+    
+    @RequestMapping(value = "/getAllList")
+	public void getAllList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+    	String tableName = request.getParameter("tableName");
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("tableName",tableName);
+
+		List<DataTable> resultMap = dataTableService.getAllList(params);
+		
+		JSONArray json = JSONArray.fromObject(resultMap);
+		
+    	response.getWriter().print(json);
+		
+	}
+    
+	@RequestMapping(value = "/getList")
+	public void getList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String tableName = request.getParameter("tableName");
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("page",start);
+		params.put("limit",limit);
+		params.put("tableName",tableName);
+		
+		int count = dataTableService.getCount(params);
+		List<DataTable> result = dataTableService.getList(params);
+		
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+		
+	}
+	
+	@RequestMapping(value = "/addRecord")
+	public void addRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Date day = new Date();    
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+
+		String tableName = request.getParameter("tableName");
+		String insertOracleTime = df.format(day);
+		String rowkeyFiled = request.getParameter("rowkeyFiled");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("tableName",tableName);
+		params.put("insertOracleTime",insertOracleTime);
+		params.put("rowkeyFiled",rowkeyFiled);
+		
+		dataTableService.addRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delRecord")
+	public void delRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String tableId = request.getParameter("tableId");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("tableId",tableId);
+		
+		dataTableService.delRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delAllRecord")
+	public void delAllRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String items = request.getParameter("tableIds");
+		
+        List<String> delList = new ArrayList<String>();
+        String[] strs = items.split(",");
+        for (String str : strs) {
+            delList.add(str);
+        }
+		
+		dataTableService.delAllRecord(delList);
+		
+	}
+	
+	@RequestMapping(value = "/editRecord")
+	public void editRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String tableId = request.getParameter("tableId");
+		String tableName = request.getParameter("tableName");
+		String insertOracleTime = request.getParameter("insertOracleTime");
+		String rowkeyFiled = request.getParameter("rowkeyFiled");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("tableId",tableId);
+		params.put("tableName",tableName);
+		params.put("insertOracleTime",insertOracleTime);
+		params.put("rowkeyFiled",rowkeyFiled);
+		
+		dataTableService.editRecord(params);
+	}
+   
+}

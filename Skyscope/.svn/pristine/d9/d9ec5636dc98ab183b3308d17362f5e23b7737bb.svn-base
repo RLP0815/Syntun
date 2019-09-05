@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.PromotionSpecialDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="PromotionSpecial" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="platformId" column="platform_id" jdbcType="INTEGER" />
+    <result property="platformName" column="platform_name" jdbcType="VARCHAR" />
+    <result property="promotionInfo" column="promotion_info" jdbcType="VARCHAR" />
+    <result property="promotionFirst" column="promotion_first" jdbcType="VARCHAR" />
+    <result property="promotionSecond" column="promotion_second" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectPromotionSpecial" resultType="PromotionSpecial">
+    select * FROM promotion_special
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM promotion_special ORDER BY id DESC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM promotion_special
+    <if test="promotionInfo != null" > where promotion_info like CONCAT('%',#{promotionInfo},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from promotion_special ORDER BY id DESC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from promotion_special where 1=1 
+     <if test="promotionInfo != null" > and promotion_info like CONCAT('%',#{promotionInfo},'%') </if>
+      ORDER BY id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addFiled" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into promotion_special (platform_id, platform_name, promotion_first, promotion_second, promotion_info)
+    	values (#{platformId,jdbcType=INTEGER}, 
+    		#{platformName,jdbcType=VARCHAR}, 
+    		#{promotionFirst,jdbcType=VARCHAR}, 
+    		#{promotionSecond,jdbcType=VARCHAR}, 
+    		#{promotionInfo,jdbcType=VARCHAR})
+  </insert>
+  
+  <update id="editFiled" parameterType="java.util.Map">
+  	update promotion_special set platform_id = #{platformId,jdbcType=INTEGER}, 
+  		platform_name = #{platformName,jdbcType=VARCHAR}, 
+  		promotion_info = #{promotionInfo,jdbcType=VARCHAR}, 
+  		promotion_first = #{promotionFirst,jdbcType=VARCHAR}, 
+  		promotion_second = #{promotionSecond,jdbcType=VARCHAR} where id = #{id}
+  </update>
+  
+  <delete id="delFiled" parameterType="java.util.Map">
+  	delete from promotion_special where id = #{id}
+  </delete>
+  
+  <delete id="delAllFiled" parameterType="java.lang.Long">
+    delete from promotion_special where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

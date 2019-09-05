@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.SystemLogDao" >
+  
+  <delete id="delete" parameterType="java.lang.String" >
+    delete from sys_role_permission where sys_role_id = #{roid}
+  </delete>
+  
+  <insert id="insert" parameterType="com.syntun.controller.systemlog.OperatorLog" >
+    insert into systemlog (userid, username, method,beanname,intf,url,requestparam,requestip)
+    values (#{userid},#{username},#{method},#{beanname},#{intf},#{url},#{requestparam},#{requestip})
+  </insert>
+  
+   <select id="find" parameterType="map" resultType="com.syntun.controller.systemlog.OperatorLog">
+     SELECT * FROM ${tableName} WHERE 1=1
+     <if test="method!=null and method!=''">
+         AND method like '%${method}%'
+     </if>
+     <if test="username!=null and username!=''">
+         AND username like '%${username}%'
+     </if>
+     ORDER BY requesttime desc
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM ${tableName} WHERE 1=1
+     <if test="method!=null and method!=''">
+         AND method like '%${method}%'
+     </if>
+     <if test="username!=null and username!=''">
+         AND username like '%${username}%'
+     </if>
+ </select>
+  
+</mapper>

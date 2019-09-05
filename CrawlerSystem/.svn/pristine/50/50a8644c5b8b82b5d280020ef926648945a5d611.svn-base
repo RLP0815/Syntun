@@ -1,0 +1,47 @@
+package com.syntun.controller;
+
+import java.io.PrintWriter;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.syntun.webget.GetWebPage;
+
+import net.sf.json.JSONObject;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/baseController")
+public class BaseController {
+
+	@RequestMapping(value = "/getUrl")
+	 public void getUrl(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String url = request.getParameter("url");
+		String urlParent = request.getParameter("urlParent");
+		String cookie = request.getParameter("cookie");
+		String userAgent = request.getParameter("userAgent");
+		System.out.println(url);
+		System.out.println(urlParent);
+		System.out.println(cookie);
+		System.out.println(userAgent);
+		JSONObject resObj = new JSONObject();
+		try {
+			GetWebPage.getPage(url, urlParent, cookie, userAgent);
+			resObj.put("code", 0);
+			resObj.put("msg", "数据抓取成功！");
+		} catch (Exception e) {
+			resObj.put("code", 1);
+			resObj.put("msg", e.toString());
+		}
+		PrintWriter out=response.getWriter();
+		out.println(resObj);
+		out.flush();
+		out.close();
+	}
+}

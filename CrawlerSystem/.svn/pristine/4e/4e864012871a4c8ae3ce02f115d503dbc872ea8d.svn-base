@@ -1,0 +1,50 @@
+package com.syntun.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.syntun.dao.ServerDao;
+import com.syntun.entity.Server;
+import com.syntun.service.ServerService;
+
+/**
+ * 
+ */
+@Service("serverService")
+public class ServerServiceImpl implements ServerService{
+
+    @Resource(name = "serverDao")
+    private ServerDao serverDao;
+
+	@Override
+	public List<Server> findAll(Map map) {
+		return serverDao.findAll(map);
+	}
+
+	@Override
+	public List<Server> findAllDel(Map map) {
+		return serverDao.findAllDel(map);
+	}
+
+	@Override
+	public int insert(Server s) {
+		return serverDao.insert(s);
+	}
+
+	@Override
+	public int update(Server s) {
+		return serverDao.update(s);
+	}
+
+	@Override
+	public Server findone(int id) {
+		return serverDao.findone(id);
+	}
+    
+    
+
+}

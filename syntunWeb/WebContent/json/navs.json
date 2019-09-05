@@ -1,0 +1,18 @@
+{
+	"contentManagement": [
+		{
+			"title": "产品状态",
+			"icon": "icon-chakan",
+			"href": "page/syntun/state/ProductState.jsp",
+			"spread": false
+		},
+		{
+			"title": "维护说明",
+			"icon": "icon-xiugai",
+			"href": "page/syntun/other/EditRemark.jsp",
+			"spread": false
+		}
+	]
+}
+
+

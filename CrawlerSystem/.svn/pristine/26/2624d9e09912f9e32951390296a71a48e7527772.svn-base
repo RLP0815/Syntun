@@ -1,0 +1,65 @@
+package com.syntun.controller;
+
+import java.io.PrintWriter;
+import java.util.HashMap;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import com.syntun.webget.GetWebPage;
+import net.sf.json.JSONObject;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/baseController")
+public class BaseController {
+
+	@RequestMapping(value = "/getUrl")
+	 public void getUrl(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String url = request.getParameter("url");
+		String urlParent = request.getParameter("urlParent");
+		String cookie = request.getParameter("cookie");
+		String userAgent = request.getParameter("userAgent");
+		String patternStr1 = request.getParameter("patternStr1");
+		String group1 = request.getParameter("group1").replace("，", ",");
+		String patternStr2 = request.getParameter("patternStr2");
+		String group2 = request.getParameter("group2").replace("，", ",");
+		String type = request.getParameter("type");
+		String requestProperty = request.getParameter("requestProperty");
+		
+		JSONObject resObj = new JSONObject();
+		try {
+			HashMap<String,String> map = GetWebPage.getPage(url,urlParent,cookie,userAgent,patternStr1,group1,patternStr2,group2,type,requestProperty);
+			resObj.put("code", 0);
+			resObj.put("msg", "数据抓取成功！");
+			resObj.put("pattern1", map.get("pattern1"));
+			resObj.put("pattern2", map.get("pattern2"));
+			resObj.put("out", map.get("out"));
+		} catch (Exception e) {
+			resObj.put("code", 1);
+			resObj.put("msg", e.toString());
+		}
+		PrintWriter out=response.getWriter();
+		out.println(resObj);
+		out.flush();
+		out.close();
+	}
+	
+	public static void main(String[] args) {
+		
+		try {
+			HashMap<String,String> map = GetWebPage.getPage("https://list.jd.com/list.html?cat=670,671,672","","","","<li class=\"gl-item\">.*?</li>","0","data-sku=\"(\\d+)\"","0","","");
+			System.out.println(map.get("pattern1"));
+			System.out.println(map.get("pattern2"));
+			System.out.println(map.get("out"));
+
+			Thread.sleep(30000);
+			System.exit(0);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}

@@ -1,0 +1,185 @@
+package com.syntun.controller;
+
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.syntun.controller.systemlog.SysLogger;
+import com.syntun.datasource.DataSourceContextHolder;
+import com.syntun.entity.TableUniqueKey;
+import com.syntun.service.TableUniqueKeyService;
+import com.syntun.util.GenericController;
+
+import net.sf.json.JSONArray;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 
+ */
+@Controller
+@RequestMapping(value = "/tableUniqueKey")
+public class TableUniqueKeyController {
+    @Resource(name = "tableUniqueKeyService")
+    TableUniqueKeyService tableUniqueKeyService;
+    
+    @RequestMapping(value = "/login")
+    public ModelAndView login()
+    {
+        ModelAndView mv=new ModelAndView();
+		DataSourceContextHolder.setDbType("ds_mop");  
+        List<TableUniqueKey> tableUniqueKey = tableUniqueKeyService.login();
+        mv.addObject("tableUniqueKey",tableUniqueKey);
+        mv.setViewName("/login");
+        return mv;
+    }
+    
+    @RequestMapping(value = "/getAllList")
+	public void getAllList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+    	String tableName = request.getParameter("tableName");
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("tableName",tableName);
+
+		DataSourceContextHolder.setDbType("ds_mop");  
+		List<TableUniqueKey> resultMap = tableUniqueKeyService.getAllList(params);
+		
+		JSONArray json = JSONArray.fromObject(resultMap);
+		
+    	response.getWriter().print(json);
+		
+	}
+    
+	@RequestMapping(value = "/getList")
+	public void getList(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String tableName = request.getParameter("tableName");
+    	int page = Integer.parseInt(request.getParameter("page"));
+    	int limit = Integer.parseInt(request.getParameter("limit"));
+    	int start = (page-1)*limit;
+    	HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("page",start);
+		params.put("limit",limit);
+		params.put("tableName",tableName);
+
+		DataSourceContextHolder.setDbType("ds_mop");  
+		int count = tableUniqueKeyService.getCount(params);
+		List<TableUniqueKey> result = tableUniqueKeyService.getList(params);
+		
+		GenericController gen = new GenericController();
+		List<Object> res = new ArrayList<>();
+        for(Object e : result){  
+            Object obj = (Object)e;  
+            res.add(obj);  
+        }  
+        
+		String jsons = gen.getResultJson(count, res);
+		response.getWriter().print(jsons.toString());
+		
+	}
+	
+	@RequestMapping(value = "/addRecord")
+    @SysLogger(modelName = "添加记录", methodType = "addRecord")
+	public void addRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		String dataBase = request.getParameter("dataBase");
+		String tableName = request.getParameter("tableName");
+		String uniqueKey = request.getParameter("uniqueKey");
+		String ifCount = request.getParameter("ifCount");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("dataBase",dataBase);
+		params.put("tableName",tableName);
+		params.put("uniqueKey",uniqueKey);
+		params.put("ifCount",ifCount);
+
+		DataSourceContextHolder.setDbType("ds_mop");  
+		tableUniqueKeyService.addRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delRecord")
+    @SysLogger(modelName = "删除记录", methodType = "delRecord")
+	public void delRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String id = request.getParameter("id");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("id",id);
+
+		DataSourceContextHolder.setDbType("ds_mop");  
+		tableUniqueKeyService.delRecord(params);
+		
+	}
+	
+	@RequestMapping(value = "/delAllRecord")
+    @SysLogger(modelName = "批量删除", methodType = "delAllRecord")
+	public void delAllRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String items = request.getParameter("ids");
+		
+        List<String> delList = new ArrayList<String>();
+        String[] strs = items.split(",");
+        for (String str : strs) {
+            delList.add(str);
+        }
+
+		DataSourceContextHolder.setDbType("ds_mop");  
+		tableUniqueKeyService.delAllRecord(delList);
+		
+	}
+	
+	@RequestMapping(value = "/editRecord")
+    @SysLogger(modelName = "修改记录", methodType = "editRecord")
+	public void editRecord(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		
+		String id = request.getParameter("id");
+		String dataBase = request.getParameter("dataBase");
+		String tableName = request.getParameter("tableName");
+		String uniqueKey = request.getParameter("uniqueKey");
+		String ifCount = request.getParameter("ifCount");
+		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		params.put("id",id);
+		params.put("dataBase",dataBase);
+		params.put("tableName",tableName);
+		params.put("uniqueKey",uniqueKey);
+		params.put("ifCount",ifCount);
+
+		DataSourceContextHolder.setDbType("ds_mop");  
+		tableUniqueKeyService.editRecord(params);
+	}
+	
+	@RequestMapping(value = "/getDataBase")
+	public void getDataBase(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+
+        DataSourceContextHolder.setDbType("ds_mop");  
+		List<Map<String, String>> resultList = tableUniqueKeyService.getDataBase();
+		
+		JSONArray json = JSONArray.fromObject(resultList);
+    	response.getWriter().print(json);
+	}
+	
+	@RequestMapping(value = "/getTableName")
+	public void getTableName(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		DataSourceContextHolder.setDbType("ds_mop");  
+		List<Map<String, String>> resultList = tableUniqueKeyService.getTableName();
+		
+		JSONArray json = JSONArray.fromObject(resultList);
+    	response.getWriter().print(json);
+	}
+	
+}

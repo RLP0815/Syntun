@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD SQL Map Config 3.0//EN"
+                "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+        <typeAlias type="com.syntun.entity.TAdmin" alias="TAdmin" />
+        <typeAlias type="com.syntun.entity.ReplaceFiled" alias="ReplaceFiled" />
+        <typeAlias type="com.syntun.entity.ProductState" alias="ProductState" />
+        <typeAlias type="com.syntun.entity.PromotionRank" alias="PromotionRank" />
+        <typeAlias type="com.syntun.entity.PromotionSpecial" alias="PromotionSpecial" />
+        <typeAlias type="com.syntun.entity.PromoCompare" alias="PromoCompare" />
+        <typeAlias type="com.syntun.entity.PlatformList" alias="PlatformList" />
+        <typeAlias type="com.syntun.entity.PromotionList" alias="PromotionList" />
+        <typeAlias type="com.syntun.entity.PatternList" alias="PatternList" />
+        <typeAlias type="com.syntun.entity.PriceCompute" alias="PriceCompute" />
+        <typeAlias type="com.syntun.entity.PromotionReplace" alias="PromotionReplace" />
+        <typeAlias type="com.syntun.entity.EditRemark" alias="EditRemark" />
+        <typeAlias type="com.syntun.entity.ErrResult" alias="ErrResult" />
+        <typeAlias type="com.syntun.entity.SkyGroups" alias="SkyGroups" />
+        <typeAlias type="com.syntun.entity.SkyUsers" alias="SkyUsers" />
+    </typeAliases>
+</configuration>

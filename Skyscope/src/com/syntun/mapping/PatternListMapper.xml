@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.syntun.dao.PatternListDao" >
+  <resultMap id="BaseResultMap" type="PatternList" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="priority" column="priority" jdbcType="INTEGER"/>
+    <result property="patternType" column="pattern_type" jdbcType="INTEGER"/>
+    <result property="patternStr" column="pattern_str" jdbcType="VARCHAR" />
+    <result property="manGroup" column="man_group" jdbcType="INTEGER"/>
+    <result property="jieGroup" column="jie_group" jdbcType="INTEGER"/>
+    <result property="isDazhe" column="is_dazhe" jdbcType="INTEGER"/>
+    <result property="isMeiman" column="is_meiman" jdbcType="INTEGER"/>
+  </resultMap>
+
+  <select id="selectRecord" resultType="PatternList">
+    select * FROM new_MJ_pattern_list
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map"  resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM new_MJ_pattern_list
+    <if test="patternStr != null" > where pattern_str like CONCAT('%',#{patternStr},'%') </if>
+  </select>
+  
+  <select id="getAllList" resultMap="BaseResultMap">
+     select * from new_MJ_pattern_list ORDER BY id DESC
+  </select>
+  
+  <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from new_MJ_pattern_list where 1=1 
+     <if test="patternStr != null" > and pattern_str like CONCAT('%',#{patternStr},'%') </if>
+      ORDER BY id DESC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into new_MJ_pattern_list (priority, pattern_type, pattern_str, 
+    				man_group, jie_group, is_dazhe, is_meiman)
+    values (#{priority,jdbcType=INTEGER}, #{patternType,jdbcType=INTEGER}, #{patternStr,jdbcType=VARCHAR}, 
+    		#{manGroup,jdbcType=INTEGER}, #{jieGroup,jdbcType=INTEGER}, #{isDazhe,jdbcType=INTEGER}, 
+    		#{isMeiman,jdbcType=INTEGER})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update new_MJ_pattern_list set priority = #{priority,jdbcType=INTEGER}, 
+  		pattern_type = #{patternType,jdbcType=INTEGER}, 
+  		pattern_str = #{patternStr,jdbcType=VARCHAR},
+  		man_group = #{manGroup,jdbcType=INTEGER}, 
+  		jie_group = #{jieGroup,jdbcType=INTEGER}, 
+  		is_dazhe = #{isDazhe,jdbcType=INTEGER}, 
+  		is_meiman = #{isMeiman,jdbcType=INTEGER}
+  		where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from new_MJ_pattern_list where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from new_MJ_pattern_list where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+</mapper>

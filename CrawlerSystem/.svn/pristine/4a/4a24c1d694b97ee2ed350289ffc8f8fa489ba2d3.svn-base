@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.TableCountListDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="tableCountList" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="dataBase" column="data_base" jdbcType="VARCHAR" />
+    <result property="tableName" column="table_name" jdbcType="VARCHAR" />
+    <result property="countNum" column="count_num" jdbcType="INTEGER" />
+    <result property="getDate" column="get_date" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selecttableCountList" resultType="tableCountList">
+    select * FROM table_count_list
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM table_count_list ORDER BY id DESC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM table_count_list where 1=1 
+		<if test="dataBase != null" > and data_base = #{dataBase} </if>
+		<if test="tableName != null" > and table_name = #{tableName} </if>
+		<if test="getDate != null" > and get_date = #{getDate} </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from table_count_list where table_name like CONCAT('%',#{tableName},'%') 
+     	ORDER BY data_base, table_name ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from table_count_list where 1=1 
+		<if test="dataBase != null" > and data_base = #{dataBase} </if>
+		<if test="tableName != null" > and table_name = #{tableName} </if>
+		<if test="getDate != null" > and get_date = #{getDate} </if>
+      ORDER BY data_base, table_name ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into table_count_list (data_base, table_name, count_num, get_date)
+    values (#{dataBase}, #{tableName}, #{countNum}, #{getDate})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update table_coundataBaseet
+  		data_base = #{dataBase},
+  		table_name = #{tableName},
+  		count_num = #{countNum},
+  		get_date = #{getDate} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from table_count_list where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from table_count_list where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+  
+  <select id="getEmailList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from table_count_list where 1=1 
+		<if test="dataBase != null" > and data_base = #{dataBase} </if>
+		<if test="tableName != null" > and table_name = #{tableName} </if>
+		<if test="getDate != null" > and get_date in (${getDate})  </if>
+      ORDER BY id DESC
+  </select>
+</mapper>

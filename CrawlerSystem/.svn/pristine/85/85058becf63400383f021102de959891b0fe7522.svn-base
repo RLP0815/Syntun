@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.Crawler144PatternListJDDao" >
+  <!--如下type的User就是mybatis-config.xml中配置的user-->
+  <resultMap id="BaseResultMap" type="Crawler144PatternListJD" >
+    <id property="id" column="id" jdbcType="INTEGER" />
+    <result property="patternGroup" column="pattern_group" jdbcType="INTEGER" />
+    <result property="urlGroup" column="url_group" jdbcType="INTEGER" />
+    <result property="patternType" column="pattern_type" jdbcType="INTEGER" />
+    <result property="patternContent" column="pattern_content" jdbcType="VARCHAR" />
+    <result property="patternIndex" column="pattern_index" jdbcType="VARCHAR" />
+    <result property="parentPatternId" column="parent_pattern_id" jdbcType="INTEGER" />
+    <result property="aboutPatternId" column="about_pattern_id" jdbcType="VARCHAR" />
+    <result property="purlId" column="purl_id" jdbcType="VARCHAR" />
+    <result property="sortId" column="sort_id" jdbcType="VARCHAR" />
+    <result property="generateSortId" column="generate_sort_id" jdbcType="VARCHAR" />
+    <result property="colName" column="col_name" jdbcType="VARCHAR" />
+    <result property="tableId" column="table_id" jdbcType="INTEGER" />
+    <result property="isSavePageData" column="is_save_page_data" jdbcType="INTEGER" />
+    <result property="isGetUrl" column="is_get_url" jdbcType="INTEGER" />
+    <result property="isDataParallel" column="is_data_parallel" jdbcType="INTEGER" />
+    <result property="writeTime" column="write_time" jdbcType="VARCHAR" />
+    <result property="remark" column="remark" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="selectCrawler144PatternListJD" resultType="Crawler144PatternListJD">
+    select * FROM pattern_list_jd
+  </select>
+  
+  <select id="selectRecord" resultMap="BaseResultMap">
+    select * FROM pattern_list_jd ORDER BY id ASC LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM pattern_list_jd
+    <if test="colName != null" > where col_name like CONCAT('%',#{colName},'%') </if>
+  </select>
+  
+  <select id="getAllList" parameterType="java.util.Map" resultMap="BaseResultMap">
+     select * from pattern_list_jd where col_name like CONCAT('%',#{colName},'%') 
+     	ORDER BY id ASC
+  </select>
+  
+   <select id="getList" parameterType="java.util.Map"  resultMap="BaseResultMap">
+     select * from pattern_list_jd where 1=1 
+     <if test="colName != null" > and col_name like CONCAT('%',#{colName},'%') </if>
+      ORDER BY id ASC
+      <if test="page != null" > LIMIT #{page},#{limit} </if>
+  </select>
+  
+  <insert id="addRecord" keyProperty="id" useGeneratedKeys="true" parameterType="java.util.Map" >
+    insert into pattern_list_jd (pattern_group, url_group, pattern_type, pattern_content, pattern_index,
+     		parent_pattern_id, about_pattern_id, purl_id, sort_id, generate_sort_id, col_name, table_id,
+     		is_save_page_data, is_get_url, is_data_parallel, write_time, remark)
+    values (#{patternGroup}, #{urlGroup}, #{patternType}, #{patternContent}, #{patternIndex}, 
+    	#{parentPatternId}, #{aboutPatternId}, #{purlId}, #{sortId}, #{generateSortId}, #{colName}, #{tableId},
+    	#{isSavePageData}, #{isGetUrl}, #{isDataParallel}, #{writeTime}, #{remark})
+  </insert>
+  
+  <update id="editRecord" parameterType="java.util.Map">
+  	update pattern_list_jd set  
+  		pattern_group = #{patternGroup},
+  		url_group = #{urlGroup},  
+  		pattern_type = #{patternType},  
+  		pattern_content = #{patternContent},  
+  		pattern_index = #{patternIndex},  
+  		parent_pattern_id = #{parentPatternId},  
+  		about_pattern_id = #{aboutPatternId},  
+  		purl_id = #{purlId},  
+  		sort_id = #{sortId},  
+  		generate_sort_id = #{generateSortId},  
+  		col_name = #{colName},  
+  		table_id = #{tableId},  
+  		is_save_page_data = #{isSavePageData},  
+  		is_get_url = #{isGetUrl},  
+  		is_data_parallel = #{isDataParallel}, 
+  		write_time = #{writeTime},
+  		remark = #{remark} where id = #{id}
+  </update>
+  
+  <delete id="delRecord" parameterType="java.util.Map">
+  	delete from pattern_list_jd where id = #{id}
+  </delete>
+  
+  <delete id="delAllRecord" parameterType="java.lang.Long">
+    delete from pattern_list_jd where id in
+    <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </delete>
+
+</mapper>

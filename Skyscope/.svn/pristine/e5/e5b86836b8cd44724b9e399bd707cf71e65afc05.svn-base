@@ -1,0 +1,54 @@
+{
+	"contentManagement": [
+		{
+			"title": "价格相关",
+			"icon": "&#xe630;",
+			"href": "page/syntun/price/PriceTab.jsp",
+			"spread": false
+		},
+		{
+			"title": "促销操作",
+			"icon": "icon-vip",
+			"href": "page/syntun/promo/PromotionTab.jsp",
+			"spread": false
+		},
+		{
+			"title": "用户维护",
+			"icon": "&#xe6b2;",
+			"href": "page/syntun/userGroup/UserTab.jsp",
+			"spread": false
+		},
+		{
+			"title": "全球购用户",
+			"icon": "&#xe63c;",
+			"href": "page/syntun/other/hkUserTab.jsp",
+			"spread": false
+		},
+		{
+			"title": "产品状态",
+			"icon": "icon-chakan",
+			"href": "page/syntun/state/ProductState.jsp",
+			"spread": false
+		},
+		{
+			"title": "特殊处理产品",
+			"icon": "icon-guanbi",
+			"href": "page/syntun/state/ProductSpecial.jsp",
+			"spread": false
+		},
+		{
+			"title": "维护说明",
+			"icon": "icon-xiugai",
+			"href": "page/syntun/other/EditRemark.jsp",
+			"spread": false
+		},
+		{
+			"title": "抛出错误",
+			"icon": "icon-guanbi",
+			"href": "page/syntun/other/ErrResult.jsp",
+			"spread": false
+		}
+	]
+}
+
+

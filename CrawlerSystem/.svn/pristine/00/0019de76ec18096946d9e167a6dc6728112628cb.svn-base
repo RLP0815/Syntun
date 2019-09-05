@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--namespace就是与此文件对应的Dao接口的全路径-->
+<mapper namespace="com.syntun.dao.ServerClassifyDao" >
+
+  <delete id="delete" parameterType="java.lang.Integer" >
+    delete from server_classify where id = #{id}
+  </delete>
+  
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true" parameterType="com.syntun.entity.server.ServerClassify" >
+    insert into server_classify (name)
+    values (#{name})
+  </insert>
+  
+  <update id="update" parameterType="com.syntun.entity.Servers" >
+    UPDATE server_classify
+    <trim prefix="set" suffixOverrides=",">
+        <if test="ip != null and ip!=''">
+            ip = #{ip},
+        </if>
+        <if test="name != null and name!=''">
+            name = #{name},
+        </if>
+        <if test="password != null and password!=''">
+            password = #{password},
+        </if>
+        <if test="isdel != null and isdel!=''">
+            isdel = #{isdel},
+        </if>
+    </trim>
+    WHERE id = #{id}
+	</update>
+    
+    <select id="findone" parameterType="java.lang.Integer" resultType="com.syntun.entity.server.ServerClassify">
+        SELECT * FROM server_classify where id=#{id}
+    </select>
+    
+    <select id="findAll" resultType="com.syntun.entity.server.ServerClassify">
+        SELECT * FROM server_classify
+    </select>
+    
+  <select id="find" parameterType="map" resultType="com.syntun.entity.server.ServerClassify">
+     SELECT * FROM server_classify WHERE 1=1
+     <if test="method!=null and method!=''">
+         AND method like '%${method}%'
+     </if>
+     <if test="username!=null and username!=''">
+         AND username like '%${username}%'
+     </if>
+    <if test="page != null" > LIMIT #{page},#{limit} </if>
+ </select>
+
+ <select id="getTotal" parameterType="map" resultType="int">
+     SELECT COUNT(1) FROM server_classify WHERE 1=1
+     <if test="method!=null and method!=''">
+         AND method like '%${method}%'
+     </if>
+     <if test="username!=null and username!=''">
+         AND username like '%${username}%'
+     </if>
+ </select>
+  
+</mapper>

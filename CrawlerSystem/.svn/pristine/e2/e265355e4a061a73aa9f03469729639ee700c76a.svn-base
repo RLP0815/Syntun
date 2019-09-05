@@ -1,0 +1,931 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="security" uri="http://www.springframework.org/security/tags"%> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>服务管理</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<link rel="stylesheet" href="../../../layui/css/layui.css" media="all" />
+<link rel="stylesheet" href="../../../css/public.css" media="all" />
+<link rel="stylesheet" href="../../../js/jquery/jquery-ui.css" media="all" />
+<link rel="stylesheet" href="../../../js/jqtree/css/zTreeStyle/zTreeStyle.css" type="text/css">
+<style> 
+.a{height:100px;}
+.a div{float:left;width:110px;height:100px;margin-left:30px;}
+.pointer{
+	cursor: pointer;
+}
+</style> 
+
+</head>
+<body>
+<input  id="ctx" style="display:none" value="${pageContext.request.contextPath}">
+<div style="width:45%;height:50px;padding-left: 30px;margin-top: 15px;">
+	<select id='queryClassifyId' onchange="queryClassify()">
+		<option value='0'>全部</option>
+		<option value='1'>巡检</option>
+		<option value='2'>日常</option>
+		<option value='3'>月销量</option>
+	</select>
+	
+	<input type="button" value='全选' onclick="allCheck(1)">
+	<input type="button" value='全不选' onclick="allCheck(2)">
+	<input type="button" value='一键启动' onclick="allStart()">
+	<input type="button" value='一键停止' onclick="allStop()">
+	<input type="button" value='添加服务器' onclick="addServer()">
+	<input type="button" value='删除服务器' onclick="delServer()">
+	<input type="button" value='废弃服务器' onclick="discardServer()">
+</div>
+
+<div class="a" id="serverDiv">
+<!--  	<div>
+		<font style="color: red">一号服务器</font>
+		<input type="checkbox" class="check"/>
+		<input type="button" value='启动'>
+		<input type="button" value='停止'>
+		<input type="button" value='启动状态'>
+		<input type="button" value='正常' style="background-color: green;">
+	</div>
+	<div>
+		<font style="color: red">一号服务器</font>
+		<input type="checkbox" class="check"/>
+		<input type="button" value='启动'>
+		<input type="button" value='停止'>
+		<input type="button" value='启动状态'>
+		<input type="button" value='正常' style="background-color: green;">
+	</div> -->
+</div>
+<div id="addService" style="display:none;">
+	<input type="hidden" class="filedId">
+	<input type="hidden" id="serverId">
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">服务IP</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="ip" lay-verify="required" placeholder="请输入服务IP">
+		</div>
+	</div>
+<!-- 	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">用户名</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="name" lay-verify="required" placeholder="请输入用户名">
+		</div>
+	</div>
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">密码</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="password" lay-verify="required" placeholder="请输入密码">
+		</div>
+	</div> -->
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">启动脚本路径</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="startpath" lay-verify="required" placeholder="请输入启动脚本路径" value='/home/server/start.sh'>
+		</div>
+	</div>
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">停止脚本路径</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="stoppath" lay-verify="required" placeholder="请输入停止脚本路径" value='/home/server/stop.sh'>
+		</div>
+	</div>
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">服务状态脚本路径</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="statepath" lay-verify="required" placeholder="请输人服务状态脚本路径" value='/home/server/state.sh'>
+		</div>
+	</div>
+<!-- 	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">服务日志路径</label>
+		<div class="layui-input-block">
+			<input type="text" class="layui-input oldFiled" id="serverLogPathId" lay-verify="required" placeholder="请输入日志路径" value='tail -f /home/wgdata/log/log_wgdata.txt'>
+		</div>
+	</div> -->
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<label class="layui-form-label">服务分类</label>
+		<div class="layui-input-inline">
+			<select id="serverClassifyId" class="searchVal" lay-filter="">
+				<option value='1'>巡检</option>
+				<option value='2'>日常</option>
+				<option value='3'>月销量</option>
+			</select>
+		</div>
+	</div>
+	<div class="layui-form-item layui-row layui-col-xs12">
+		<div class="layui-input-block">
+			<button class="layui-btn layui-btn-sm" id="saveService">保存</button>
+			<button class="layui-btn layui-btn-sm editFlied" id="editFlied">立即修改</button>
+		</div>
+	</div>
+</div>
+<div id="discardServerDiv" style="display:none;">
+	<div class="a" id="discardServerDivs">
+<!-- 	  	<div>
+			<font style="color: red">一号服务器</font>
+			<input type="checkbox" class="checkDelServer"/>
+		</div>
+		<div>
+			<font style="color: red">一号服务器</font>
+			<input type="checkbox" class="checkDelServer"/>
+		</div> -->
+	</div>
+</div>
+<table class="layui-hide" id="demo" lay-filter="test"></table>
+<div id="severLogDivId" style="display:none;">
+	<div id="log-container" style="width:100%;height: 450px; overflow-y: scroll; background: #0d0d0d; color: #aaa; padding: 10px;">
+        <div>
+        </div>
+    </div>
+    <input type="button" value="停止" onclick="sendStop()"/>
+</div>
+<script type="text/javascript" src="../../../js/jquery/jquery-3.3.1.js"></script>
+<script type="text/javascript" src="../../../js/jquery/jquery-ui.js"></script>
+<script type="text/javascript" src="../../../layui/layui.js"></script>
+<script type="text/javascript">
+var t2 = window.setInterval("timingGetServerState()",10000);
+//:10秒查询一次服务状态
+function timingGetServerState(){
+	var queryClassifyId = $("#queryClassifyId").val();
+  	$.ajax({
+  		  url: $("#ctx").attr("value") + '/command/getAll.ht',
+		  type: 'post',
+		  data: {
+			  "message":queryClassifyId,
+		  },
+		  dataType: 'json',
+		  success: function (data, status) {
+			  if(data.code=='200'){
+				  var serverInfo = data.serverInfo;
+				    if(serverInfo.length>0){
+						for (var i = 0; i < serverInfo.length; i++) {
+							var state = serverInfo[i].state;
+							var state1 = "state1"+serverInfo[i].id;
+							var state2 = "state2"+serverInfo[i].id;
+							if(state=='0'){
+								  $("#"+state1).val("停止状态");
+								  $("#"+state1).css('background','red')
+								  $("#"+state2).val("异常");
+								  $("#"+state2).css('background','red')
+							}else{
+								  $("#"+state1).val("启动状态");
+								  $("#"+state1).css('background','green')
+								  $("#"+state2).val("正常");
+								  $("#"+state2).css('background','green')
+							}
+						}
+				    }
+
+			  }else{
+				  alert("操作失败!");
+			  }
+		  },
+		  fail: function (err, status) {
+			  alert(status);
+		  }
+	})
+}
+//查询服务日志
+function queryServerLog(ip,taillog){
+	$("#severLogDivId").dialog({  
+        //autoOpen : false,   // 是否自动弹出窗口  
+        modal : true,    // 设置为模态对话框  
+        resizable : true,  
+        width : 1000,   //弹出框宽度  
+        height : 600,   //弹出框高度  
+        title : "log",  //弹出框标题  
+        position: { my: "center top", at: "center top", of: window },
+        closeText : '关闭',
+        closeOnEscape:false, 
+        buttons:{  
+        	/*'添加':function(data){  
+        		 
+            }, */
+            '关闭':function(){  
+            	$(this).dialog("close");
+            	websocketLog.close();
+            	$("#log-container div").text('');
+            }
+        },
+        open:function(event,ui){
+        	$(".ui-dialog-titlebar-close").hide();
+		}
+   });
+	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/getLogTxtPath.ht',
+			  type: 'post',
+			  data: {
+				  "ip":ip,
+				  "path":taillog,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+						var tailf = ip+",tail -f "+data.strData;
+						sendMessage(tailf);
+				  }else{
+					  top.layer.msg("操作失败,日志文件路径不存在!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+}
+var websocketLog;
+function sendMessage(sendMessageid){
+	//websocketLog = new WebSocket('ws://localhost:8080/CrawlerSystem/log');
+	websocketLog = new WebSocket('ws://192.168.0.132:8080/CrawlerSystem/log');
+    //接受服务器端返回数据
+    websocketLog.onmessage = function(event) {
+        // 接收服务端的实时日志并添加到HTML页面中
+        $("#log-container div").append(event.data);
+        // 滚动条滚动到最低部
+        $("#log-container").scrollTop($("#log-container div").height() - $("#log-container").height());
+    };
+    websocketLog.onopen = function()
+    {
+       // Web Socket 已连接上，使用 send() 方法发送数据
+       websocketLog.send(sendMessageid);
+    };
+    websocketLog.onclose = function()
+    { 
+       // 关闭 websocket
+    	websocketLog.close();
+    };
+    websocketLog.error = function()
+    { 
+       // 关闭 error
+       alert("连接出错..."); 
+    };
+}
+function sendStop(){
+	websocketLog.close();
+}
+//查询服务每分钟日志
+function demo(ip){
+	$("#demo").dialog({  
+        //autoOpen : false,   // 是否自动弹出窗口  
+        modal : true,    // 设置为模态对话框  
+        resizable : true,  
+        width : 800,   //弹出框宽度  
+        height : 500,   //弹出框高度  
+        title : "数量",  //弹出框标题  
+        position: { my: "center top", at: "center top", of: window },
+        closeText : '关闭',
+        buttons:{  
+        	/*'添加':function(data){  
+        		 
+            }, */
+            '取消':function(){  
+            	$(this).dialog("close");  
+            }  
+        } 
+   }); 
+	layui.use(['element','form','layer','table','laytpl'],function(){
+		
+		var form = layui.form,
+	        layer = parent.layer === undefined ? layui.layer : top.layer,
+	        $ = layui.jquery,
+	        laytpl = layui.laytpl,
+	        table = layui.table;
+	    //替换字段列表
+	    var tableIns = table.render({
+	        elem: '#demo',
+	        url :$("#ctx").attr("value") + '/command/getIpInfoList?ip='+ip,
+	        cellMinWidth : 95,
+	        //page : true,
+	        height : "full-68",
+	        //limits : [10,15,20,25],
+	        limit : 1000,
+	        id : "filedListTable",
+	        cols : [[
+	            {type: 'numbers', width:30, fixed: 'left'},
+	            {field: 'url_ip', title: 'ip', align:'center',minWidth:200},
+	            {field: 'number',width:100, title: '数量', align:'center',minWidth:200},
+	            {field: 'date_time', title: '日期', align:'center',minWidth:200},
+	            {field: 'time',width:100, title: '时间', align:'center',minWidth:200,sort:true},
+	        ]]
+	    });
+	})
+}
+    $(function() {
+		//初始化数据方法
+		initServerInfo();
+    });
+	function initServerInfo(){
+		var index = top.layer.msg('数据加载中，请稍候',{icon: 16,time:false,shade:0.8});
+	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/getAll.ht',
+	  		  type: 'post',
+	  		  dataType: 'json',
+	  		  success: function (data, status) {
+				  if(data.code=='200'){
+					  var serverInfo = data.serverInfo;
+					  //console.log(JSON.stringify(serverInfo));
+					    var htm = '';
+					    if(serverInfo.length>0){
+					    	top.layer.msg("加载完成！");
+							for (var i = 0; i < serverInfo.length; i++) {
+								var jsondata = JSON.stringify(serverInfo[i]);
+								var state = serverInfo[i].state;
+								var state1 = "state1"+serverInfo[i].id;
+								var state2 = "state2"+serverInfo[i].id;
+								htm += "<div>\n"+
+								"<font style=\"color: red;cursor: pointer\" onclick='editServer(\""+serverInfo[i].id+"\")'>" + serverInfo[i].ip + "</font>\n"+
+								"<input type='checkbox' class='check' value='"+jsondata+"'/>\n"+
+								"<input type='button' value='启动' onclick='start(\""+serverInfo[i].id+"\")'>\n"+
+								"<input type='button' value='停止' onclick='stop(\""+serverInfo[i].id+"\")'>\n"+
+								"<input type='button' value='日志' onclick=\"queryServerLog('"+serverInfo[i].ip+"','"+serverInfo[i].startpath+"')\">\n";
+								if(state=='0'){
+									htm += "<input type=\"button\" id="+state1+" value=\"停止状态\" style=\"background-color: red;\">\n"+
+									       "<input type=\"button\" id="+state2+" value=\"异常\" style=\"background-color: red;\" onclick='demo(\""+serverInfo[i].ip+"\")'>\n"+
+									       '</div>\n';
+								}else{
+									htm += "<input type=\"button\" id="+state1+" value=\"启动状态\" style=\"background-color: green;\">\n"+
+										   "<input type=\"button\" id="+state2+" value=\"正常\" style=\"background-color: green;\" onclick='demo(\""+serverInfo[i].ip+"\")'>\n"+
+								           '</div>\n';
+								}
+							}
+							$("#serverDiv").append(htm);
+					    }else{
+					    	top.layer.msg("暂无服务！");
+					    }
+				  }else{
+					  top.layer.msg("失败！");
+				  }
+	  		  },
+	  		  fail: function (err, status) {
+	  			top.layer.msg("失败！");
+	  		  }
+	  	})
+	}
+/* 	function initServerInfo(){
+		var queryClassifyId = $("#queryClassifyId").val();
+		//var websocket = new WebSocket('ws://localhost:8080/CrawlerSystem/serverWebSocket');
+		var websocket = new WebSocket('ws://192.168.0.132:8080/CrawlerSystem/serverWebSocket');
+        $("#serverDiv").empty();
+        websocket.onmessage = function(event) {
+            // 接收服务端的实时日志并添加到HTML页面中
+            var serverInfo = eval("("+event.data+")");//json转对象
+            var jsondata = JSON.stringify(serverInfo);
+			var state = serverInfo.state;
+			var state1 = "state1"+serverInfo.id;
+			var state2 = "state2"+serverInfo.id;
+			var htm = '';
+			htm += "<div>\n"+
+				"<font style=\"color: red;cursor: pointer\" onclick='editServer(\""+serverInfo.id+"\")'>" + serverInfo.ip + "</font>\n"+
+				"<input type='checkbox' class='check' value='"+jsondata+"'/>\n"+
+				"<input type='button' value='启动' onclick='start(\""+serverInfo.id+"\")'>\n"+
+				"<input type='button' value='停止' onclick='stop(\""+serverInfo.id+"\")'>\n"+
+				"<input type='button' value='日志' onclick=\"queryServerLog('"+serverInfo.ip+"','"+serverInfo.startpath+"')\">\n";
+				if(state=='0'){
+					htm += "<input type=\"button\" id="+state1+" value=\"停止状态\" style=\"background-color: red;\">\n"+
+					       "<input type=\"button\" id="+state2+" value=\"异常\" style=\"background-color: red;\" onclick='demo(\""+serverInfo.ip+"\")'>\n"+
+					       '</div>\n';
+				}else{
+					htm += "<input type=\"button\" id="+state1+" value=\"启动状态\" style=\"background-color: green;\">\n"+
+						   "<input type=\"button\" id="+state2+" value=\"正常\" style=\"background-color: green;\" onclick='demo(\""+serverInfo.ip+"\")'>\n"+
+				           '</div>\n';
+				}
+			$("#serverDiv").append(htm);
+        };
+        websocket.onopen = function()
+        {
+           // Web Socket 已连接上，使用 send() 方法发送数据
+           websocket.send(queryClassifyId);
+        };
+	} */
+	//编辑服务操作
+	function editServer(id){
+		$("#saveService").hide();
+		$("#editFlied").show();
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/getServerById.ht',
+			  type: 'post',
+			  data: {
+				  "id":id,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("获取成功！");
+					    var serverInfo = data.serverInfo;
+					    $("#serverId").val(serverInfo.id);
+					    $("#ip").val(serverInfo.ip);
+					    if(serverInfo.classify!=null){
+						    $("#serverClassifyId").val(serverInfo.classify);
+						    //renderForm();
+					    }else{
+					    	$("#serverClassifyId").val("1");
+					    }
+				  }else{
+					  top.layer.msg("获取失败！");
+				  }
+			  },
+			  fail: function (err, status) {
+				  top.layer.msg("获取失败！");
+			  }
+		})
+    	$("#addService").dialog({  
+            //autoOpen : false,   // 是否自动弹出窗口  
+            modal : true,    // 设置为模态对话框  
+            resizable : true,  
+            width : 500,   //弹出框宽度  
+            height : 560,   //弹出框高度  
+            title : "编辑",  //弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+            	/*'添加':function(data){  
+            		 
+	            }, */
+	            '取消':function(){  
+	            	$("#ip").val("");
+            	    $("#name").val("");
+            	    $("#password").val("");
+	            	$(this).dialog("close");  
+	            }  
+            } 
+       }); 
+	}
+    function renderForm() {
+        layui.use(['form'], function () {
+            $ = layui.jquery;
+            var form = layui.form;
+            form.render(); //刷新select选择框渲染
+        });
+    }
+	//编辑点击编辑按钮
+	$("#editFlied").click(function(){
+		var id = $("#serverId").val();
+		if(id==''){
+			top.layer.msg("请输入id！");
+			return false;
+		}
+		
+		var serverClassifyId = $("#serverClassifyId").val();
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/editServer.ht',
+			  type: 'post',
+			  data: {
+				  "id":id,
+				  "classify" : serverClassifyId,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("编辑成功！");
+					  //关闭弹层方法
+					  $("#addService").dialog("close"); 
+				  }else{
+					  top.layer.msg("获取失败！");
+				  }
+			  },
+			  fail: function (err, status) {
+				  top.layer.msg("获取失败！");
+			  }
+		})
+	});
+	//查询平台分类
+	function queryClassify(){
+		initServerInfo();
+	}
+	//全选、反选
+	function allCheck(id){
+		if(id=='2'){
+			$(".check").prop("checked",false);
+		}else {
+			$(".check").prop("checked",true);
+		}
+	}
+	//查询单个服务状态
+	function queryOneState(id){
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/queryOneState.ht',
+			  type: 'post',
+			  data: {
+				  "id":id,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  var stateList = data.stateList;
+					  var state1 = "state1"+id;
+					  var state2 = "state2"+id;
+						if(stateList.state=='0'){
+							  $("#"+state1).val("停止状态");
+							  $("#"+state1).css('background','red')
+							  $("#"+state2).val("异常");
+							  $("#"+state2).css('background','red')
+						}else{
+							  $("#"+state1).val("启动状态");
+							  $("#"+state1).css('background','green')
+							  $("#"+state2).val("正常");
+							  $("#"+state2).css('background','green')
+						}
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//单个服务启动
+	function start(id){
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/start.ht',
+			  type: 'post',
+			  data: {
+				  "id":id,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("启动成功！");
+					  queryOneState(id);
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//单个服务停止
+	function stop(id){
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/stop.ht',
+			  type: 'post',
+			  data: {
+				  "id":id,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("停止成功！");
+					  queryOneState(id);
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//一键启动
+	function allStart(){
+		//判断是否有选择
+		if($('div input[type=checkbox]:checked').length==0){
+		 	top.layer.msg("请选择服务器！");
+			return false;
+		}
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+		var serverInfo = [];
+	    $("input[type='checkbox']").each(function () {
+	        if($(this).prop('checked') == true){
+ 	              var jsonStr = $(this).val();
+	              var str1 = eval("("+jsonStr+")");//json转对象
+	              serverInfo.push(str1);
+	        }
+	    });
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/allStart.ht',
+			  type: 'post',
+			  data: {
+				  "serverInfo":JSON.stringify(serverInfo),
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("启动成功！");
+					  queryallState(serverInfo);
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//查询一键启动/停止，服务状态
+	function queryallState(serverInfo){
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/queryallState.ht',
+			  type: 'post',
+			  data: {
+				  "serverInfo":JSON.stringify(serverInfo),
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  var stateList = data.stateList;
+					    if(stateList.length>0){
+							for (var i = 0; i < stateList.length; i++) {
+					              var id = stateList[i].id;
+								  var state1 = "state1"+id;
+								  var state2 = "state2"+id;
+								if(stateList[i].state=='0'){
+									  $("#"+state1).val("停止状态");
+									  $("#"+state1).css('background','red')
+									  $("#"+state2).val("异常");
+									  $("#"+state2).css('background','red')
+								}else{
+									  $("#"+state1).val("启动状态");
+									  $("#"+state1).css('background','green')
+									  $("#"+state2).val("正常");
+									  $("#"+state2).css('background','green')
+								}
+							}
+					    }
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//一键停止
+	function allStop(){
+		//判断是否有选择
+		if($('div input[type=checkbox]:checked').length==0){
+			top.layer.msg("请选择服务器！");
+			return false;
+		}
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+		var serverInfo = [];
+	    $("input[type='checkbox']").each(function () {
+	        if($(this).prop('checked') == true){
+ 	              var jsonStr = $(this).val();
+	              var str1 = eval("("+jsonStr+")");//json转对象
+	              serverInfo.push(str1);
+	        }
+	    });
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/allStop.ht',
+			  type: 'post',
+			  data: {
+				  "serverInfo":JSON.stringify(serverInfo),
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("停止成功！");
+					  queryallState(serverInfo);
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//添加服务器
+	function addServer(){
+		$("#saveService").show();
+		$("#editFlied").hide();
+    	$("#addService").dialog({  
+            //autoOpen : false,   // 是否自动弹出窗口  
+            modal : true,    // 设置为模态对话框  
+            resizable : true,  
+            width : 500,   //弹出框宽度  
+            height : 560,   //弹出框高度  
+            title : "添加",  //弹出框标题  
+            position: { my: "center top", at: "center top", of: window },
+            closeText : '关闭',
+            buttons:{  
+            	/*'添加':function(data){  
+            		 
+	            }, */
+	            '取消':function(){  
+	            	$("#ip").val("");
+            	    $("#name").val("");
+            	    $("#password").val("");
+	            	$(this).dialog("close");  
+	            }  
+            } 
+       }); 
+	}
+	//添加点击保存按钮
+	$("#saveService").click(function(){
+		var ip = $("#ip").val();
+		if(ip==''){
+			top.layer.msg("请输入ip！");
+			return false;
+		}
+/* 		var name = $("#name").val();
+		if(name==''){
+			top.layer.msg("请输入服务器名称！");
+			return false;
+		}
+		var password = $("#password").val();
+		if(password==''){
+			top.layer.msg("请输入服务器密码！");
+			return false;
+		} */
+		var startpath = $("#startpath").val();
+		if(startpath==''){
+			top.layer.msg("请输入启动脚本路径！");
+			return false;
+		}
+		var stoppath = $("#stoppath").val();
+		if(stoppath==''){
+			top.layer.msg("请输入停止脚本路径！");
+			return false;
+		}
+		var statepath = $("#statepath").val();
+		if(statepath==''){
+			top.layer.msg("请输入服务状态路径！");
+			return false;
+		}
+		
+		var serverClassifyId = $("#serverClassifyId").val();
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/addServer.ht',
+			  type: 'post',
+			  data: {
+				  "ip":ip,
+				  "startpath" : startpath,
+				  "stoppath" : stoppath,
+				  "statepath" : statepath,
+				  "classify" : serverClassifyId,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					    var serverInfo = data.serverInfo;
+					    var jsondata = JSON.stringify(serverInfo);
+						var state = serverInfo.state;
+						var state1 = "state1"+serverInfo.id;
+						var state2 = "state2"+serverInfo.id;
+					    var htm = '';
+						htm += "<div>\n"+
+							"<font style=\"color: red\">" + serverInfo.ip + "</font>\n"+
+							"<input type='checkbox' class='check' value='"+jsondata+"'/>\n"+
+							"<input type='button' value='启动' onclick='start(\""+serverInfo.id+"\")'>\n"+
+							"<input type='button' value='停止' onclick='stop(\""+serverInfo.id+"\")'>\n"+
+							"<input type='button' value='日志' onclick=\"queryServerLog('"+serverInfo.ip+"','"+serverInfo.startpath+"')\">\n";
+							if(state=='0'){
+								htm += "<input type=\"button\" id="+state1+" value=\"停止状态\" style=\"background-color: red;\">\n"+
+									   "<input type=\"button\" id="+state2+" value=\"异常\" style=\"background-color: red;\">\n"+
+									   '</div>\n';
+							}else{
+								htm += "<input type=\"button\" id="+state1+" value=\"启动状态\" style=\"background-color: green;\">\n"+
+									   "<input type=\"button\" id="+state2+" value=\"正常\" style=\"background-color: green;\">\n"+
+									   '</div>\n';
+							}
+						$("#serverDiv").empty();
+						$("#serverDiv").append(htm);
+					  top.layer.msg("添加成功！");
+					  //关闭弹层方法
+					  $("#addService").dialog("close"); 
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	});
+	//删除服务器
+	function delServer(){
+		//判断是否有选择
+		if($('div input[type=checkbox]:checked').length==0){
+			top.layer.msg("请选择服务器！");
+			return false;
+		}
+		var delServerInfo = [];
+	    $("input[type='checkbox']").each(function () {
+	        if($(this).prop('checked') == true){
+	              //之前根据返回选中的id
+//	            selids += ","+$(this).parent().siblings("input[name='id']").val();
+	              //删除页面div
+	              $(this).closest("div").remove();
+ 	              var jsonStr = $(this).val();
+	              var str1 = eval("("+jsonStr+")");//json转对象
+	              delServerInfo.push(str1); 
+	        }
+	    });
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/delServer.ht',
+			  type: 'post',
+			  data: {
+				  "delServerInfo":JSON.stringify(delServerInfo),
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("删除成功！");
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+	//点击查看废弃服务器
+	function discardServer(){
+    		var index = top.layer.msg('数据加载中，请稍候',{icon: 16,time:false,shade:0.8});
+    	  	$.ajax({
+    	  		  url: $("#ctx").attr("value") + '/command/getAllDel.ht',
+    	  		  type: 'post',
+    	  		  dataType: 'json',
+    	  		  success: function (data, status) {
+    				  if(data.code=='200'){
+    					  top.layer.msg("加载完成！");
+    					  var serverInfo = data.serverInfo;
+    					  //console.log(JSON.stringify(serverInfo));
+    					    var htm = '';
+    					    if(serverInfo.length>0){
+    					    	$("#discardServerDivs").empty();
+    							for (var i = 0; i < serverInfo.length; i++) {
+    								var jsondata = JSON.stringify(serverInfo[i]);
+    								var state = serverInfo[i].state;
+    								var state1 = "state1"+serverInfo[i].id;
+    								var state2 = "state2"+serverInfo[i].id;
+    								htm += "<div>\n"+
+    									"<font style=\"color: red\">" + serverInfo[i].ip + "</font>\n"+
+    									"<input type='button' value='恢复服务' onclick='discardStart(\""+serverInfo[i].id+"\")'>\n"+
+    									'</div>\n';
+    							}
+    							$("#discardServerDivs").append(htm);
+    							
+    					    	$("#discardServerDiv").dialog({  
+    					            //autoOpen : false,   // 是否自动弹出窗口  
+    					            modal : true,    // 设置为模态对话框  
+    					            resizable : true,  
+    					            width : 800,   //弹出框宽度  
+    					            height : 500,   //弹出框高度  
+    					            title : "废弃服务",  //弹出框标题  
+    					            position: { my: "center top", at: "center top", of: window },
+    					            closeText : '关闭',
+    					            buttons:{  
+    					            	/*'添加':function(data){  
+    					            		 
+    						            }, */
+    						            '取消':function(){  
+    						            	$(this).dialog("close");  
+    						            }  
+    					            } 
+    					       }); 
+    					    }else{
+    					    	top.layer.msg("暂无废弃服务！");
+    					    }
+    				  }else{
+    					  top.layer.msg("失败！");
+    				  }
+    	  		  },
+    	  		  fail: function (err, status) {
+    	  			  alert(status);
+    	  		  }
+    	  	})
+	}
+	//恢复服务
+	function discardStart(id){
+		var index = top.layer.msg('数据提交中，请稍候',{icon: 16,time:false,shade:0.8});
+   	  	$.ajax({
+	  		  url: $("#ctx").attr("value") + '/command/onerecoveryServer.ht',
+			  type: 'post',
+			  data: {
+				  "id":id,
+			  },
+			  dataType: 'json',
+			  success: function (data, status) {
+				  if(data.code=='200'){
+					  top.layer.msg("恢复成功！");
+					  //关闭弹层方法
+					  $("#discardServerDiv").dialog("close"); 
+					  initServerInfo();
+				  }else{
+					  alert("操作失败!");
+				  }
+			  },
+			  fail: function (err, status) {
+				  alert(status);
+			  }
+		})
+	}
+</script>
+</body>
+</html>
